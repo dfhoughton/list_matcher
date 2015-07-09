@@ -1,6 +1,6 @@
 # ListMatcher
 
-TODO: Write a gem description
+For creating compact, non-backtracking regular expressions from a list of strings.
 
 ## Installation
 
@@ -20,7 +20,13 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+require 'list_matcher'
+
+m = List::Matcher.new
+puts m.pattern %w( cat dog )    # (?>cat|dog)
+puts m.pattern %w( cat rat )    # (?>[cr]at)
+```
 
 ## Contributing
 
