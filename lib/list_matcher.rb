@@ -222,7 +222,6 @@ module List
     end
 
     class Sequence < Node
-      attr_reader :alternates
       def initialize(engine, *constituents)
         super(engine)
         @children = constituents
