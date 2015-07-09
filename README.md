@@ -30,6 +30,7 @@ puts m.pattern %w( cat camel )                   # (?>ca(?>mel|t))
 puts m.pattern %w( catttttttttt )                # (?>ca(?>tt){5})
 puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]a(?>tt){5})
 puts m.pattern %w( cad bad dad )                 # (?>[b-d]ad)
+puts m.pattern %w( cat catalog )                 # (?>cat(?>alog)?+)
 ```
 
 ## Contributing
