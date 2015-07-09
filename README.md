@@ -24,8 +24,12 @@ Or install it yourself as:
 require 'list_matcher'
 
 m = List::Matcher.new
-puts m.pattern %w( cat dog )    # (?>cat|dog)
-puts m.pattern %w( cat rat )    # (?>[cr]at)
+puts m.pattern %w( cat dog )                     # (?>cat|dog)
+puts m.pattern %w( cat rat )                     # (?>[cr]at)
+puts m.pattern %w( cat camel )                   # (?>ca(?>mel|t))
+puts m.pattern %w( catttttttttt )                # (?>ca(?>tt){5})
+puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]a(?>tt){5})
+puts m.pattern %w( cad bad dad )                 # (?>[b-d]ad)
 ```
 
 ## Contributing
