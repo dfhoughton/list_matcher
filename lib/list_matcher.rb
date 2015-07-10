@@ -325,7 +325,22 @@ module List
               "#{ Regexp.quote s.chr }-#{ Regexp.quote e.chr }"
             end
           end.join ''
-          "[#{mid}]"
+          clean_specials mid
+        end
+      end
+
+      def clean_specials(s)
+        if engine.case_insensitive
+          s.gsub! /0-9_a-z/, '\w'
+        else
+          s.gsub! /0-9A-Z_a-z/, '\w'
+        end
+        s.gsub! /\t-\r /, '\s'
+        s.gsub! /0-9/, '\d'
+        if s =~ /^\\\w$/
+          s
+        else
+          "[#{s}]"
         end
       end
 
