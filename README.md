@@ -32,6 +32,7 @@ puts m.pattern %w( cat-t-t-t-t-t-t-t-t-t )       # (?>ca(?>(?>t\-){4}){2}t\-t)
 puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]a(?>tt){5})
 puts m.pattern %w( cad bad dad )                 # (?>[b-d]ad)
 puts m.pattern %w( cat catalog )                 # (?>cat(?>alog)?+)
+puts m.pattern (1..31).to_a                      # (?>[1-9]|1\d|2\d|3[01])
 ```
 
 ## Contributing
