@@ -4,6 +4,12 @@ module List
   class Matcher
     attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim
 
+    # convenience method for one-off regexen where there's no point in keeping
+    # around a pattern generator
+    def self.pattern(list, opts={})
+      self.new(**opts).pattern list
+    end
+
     def initialize(
           atomic:           true,
           backtracking:     false,
@@ -137,7 +143,7 @@ module List
 
     class Node
       attr_accessor :parent, :engine, :optional
-      
+
       def initialize(n)
         @engine = n
         @children = []
