@@ -137,31 +137,40 @@ module List
 
     class Node
       attr_accessor :parent, :engine, :optional
+      
       def initialize(n)
         @engine = n
         @children = []
       end
+
       def root?
         parent.nil?
       end
+
       def optional?
         optional
       end
+
       def children
         @children ||= []
       end
+
       def convert
         raise NotImplementedError
       end
+
       def char?
         false
       end
+
       def left_child(n)
         children[0] == n
       end
+
       def right_child(n)
         children[-1] == n
       end
+
       def left?
         return @left unless @left.nil?
         @left = if root?
@@ -178,6 +187,7 @@ module List
           parent.right_child self
         end
       end
+
       def middle?
         if root?
           false
@@ -185,27 +195,35 @@ module List
           !( left? || right? )
         end
       end
+
       def left_boundary
         '\b'
       end
+
       def right_boundary
         '\b'
       end
+
       def word_test
         /\w/
       end
+
       def pfx
         engine.pfx
       end
+
       def qmark
         engine.qmark
       end
+
       def bound
         engine.bound
       end
+
       def need_group?
         optional? || !atomic?
       end
+
       def finalize(rx)
         if optional?
           rx = wrap rx unless atomic?
@@ -213,34 +231,43 @@ module List
         end
         rx
       end
+
       def wrap(s)
         engine.wrap s
       end
+
       def atomic?
         false
       end
+
     end
 
     class Sequence < Node
+
       def initialize(engine, *constituents)
         super(engine)
         @children = constituents
       end
+
       def convert
         constituents = children.map(&:convert)
         rx = constituents.join('')
         finalize rx
       end
+
     end
 
     class CharClass < Node
+
       def initialize(engine, children)
         super(engine)
         @children = children
       end
+
       def atomic?
         true
       end
+
       def convert
         rx = if bound && !middle?
           word_chars = children.select{ |c| word_test === c }
@@ -315,27 +342,34 @@ module List
     end
 
     class Alternate < Node
+
       def initialize(engine, list)
         super(engine)
         @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, self ) }
       end
+
       def left_child(n)
         left?
       end
+
       def right_child(n)
         right?
       end
+
       def convert
         rx = children.map(&:convert).join('|')
         rx = wrap rx unless root?
         finalize rx
       end
+
       def atomic?
         true
       end
+
     end
 
     class Leaf < Node
+
       attr_reader :string
 
       def initialize(engine, string)
@@ -391,5 +425,6 @@ module List
         end
       end
     end
+
   end
 end
