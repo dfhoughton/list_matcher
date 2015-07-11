@@ -173,7 +173,7 @@ module List
             CharClass.new self, chars
           else
             c = CharClass.new self, chars
-            a = list.size == 1 ? Leaf.new( self, special, list[0] ) : Alternate.new( self, special, list )
+            a = Alternate.new( self, special, list )
             a.children.unshift c
             a
           end
