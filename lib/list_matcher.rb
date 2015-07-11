@@ -1,4 +1,5 @@
 require "list_matcher/version"
+require 'set'
 
 module List
   class Matcher
@@ -10,18 +11,49 @@ module List
       self.new(**opts).pattern list
     end
 
+    def self.unused_chars(list, n=1)
+      used = Set.new
+      list.compact.map(&:to_s).each do |w|
+        w.chars.each{ |c| used << c }
+      end
+      s = 40
+      available = []
+      while available.length < n
+        c = s.chr
+        unless used.include? c
+          available << c
+        end
+        s += 1
+      end
+      available
+    end
+
+    W = Regexp.new '\w'
+
     def initialize(
           atomic:           true,
           backtracking:     false,
           bound:            false,
           trim:             false,
-          case_insensitive: false
+          case_insensitive: false,
+          special:          {}
         )
       @atomic           = atomic
       @backtracking     = backtracking
       @trim             = trim
       @case_insensitive = case_insensitive
-      @bound            = bound
+      @special          = special.dup
+      @bound            = !!bound
+      if bound.is_a? Hash
+        @word_test   = bound[:test]  || W
+        @left_bound  = bound[:left]  || '\b'
+        @right_bound = bound[:right] || '\b'
+      elsif bound
+        @word_test   = W
+        @left_bound  = '\b'
+        @right_bound = '\b'
+      end
+      raise "special keys must be characters" if @special.keys.any?{ |k| !( k.is_a?(String) && k.length == 1 ) }
     end
 
     def pattern(list)
@@ -30,7 +62,21 @@ module List
       list.map!(&:downcase)                         if case_insensitive
       list = list.uniq.sort
       return nil if list.empty?
-      root = tree list, nil
+      
+      specials = init_specials list
+      if bound
+        list = list.map do |w|
+          if @word_test === w[0]
+            w = specials.left + w
+          end
+          if @word_test === w[-1]
+            w += specials.right
+          end
+          w
+        end
+      end
+      root = tree list, specials
+      root.root = true
       rx = root.convert
       if case_insensitive
         "(?i:#{rx})"
@@ -41,27 +87,33 @@ module List
       end
     end
 
-    def tree(list, parent)
+    def init_specials(list)
+      special = @special.dup
+      if bound
+        l, r = self.class.unused_chars list + @special.keys, 2
+        special[l] = @left_bound
+        special[r] = @right_bound
+      end
+      Special.new special, l, r
+    end
+
+    def tree(list, special)
       root = if list.size == 1
-        Leaf.new self, list[0]
+        Leaf.new self, special, list[0]
       else
         if prefix = find_prefix(list)
           l = prefix.length
           remainder = list.map{ |s| s[l..-1] }.select{ |s| s.length > 0 }
         end
-        body = find_body( remainder || list )
+        body = find_body( special, remainder || list )
         if prefix
           body.optional = prefix.length == list[0].length
-          prefix = Leaf.new self, prefix
-          s = Sequence.new self, prefix, body
-          prefix.parent = s
-          body.parent = s
-          s
+          prefix = Leaf.new self, special, prefix
+          Sequence.new self, prefix, body
         else
           body
         end
       end
-      root.parent = parent
       root
     end
 
@@ -106,51 +158,69 @@ module List
       nil
     end
 
-    def find_body(list)
+    def find_body(special, list)
       if list.size == 1
-        Leaf.new self, list[0]
+        Leaf.new self, special, list[0]
       else
         if sfx = find_suffix(list)
           l = sfx.length
           list = list.map{ |w| w[0...-l] }
         end
-        chars = list.select{ |w| w.length == 1 }
+        chars = list.select{ |w| w.length == 1 && !special.special?(w) }
         body = if chars.length > 1
           list -= chars
           if list.empty?
             CharClass.new self, chars
           else
             c = CharClass.new self, chars
-            a = list.size == 1 ? Leaf.new( self, list[0] ) : Alternate.new( self, list )
-            c.parent = a
+            a = list.size == 1 ? Leaf.new( self, special, list[0] ) : Alternate.new( self, special, list )
             a.children.unshift c
             a
           end
         else
-          Alternate.new( self, list )
+          Alternate.new( self, special, list )
         end
         if sfx
-          sfx = Leaf.new self, sfx
-          s = Sequence.new self, body, sfx
-          body.parent = s
-          sfx.parent = s
-          s
+          sfx = Leaf.new self, special, sfx
+          Sequence.new self, body, sfx
         else
           body
         end
       end
     end
 
-    class Node
-      attr_accessor :parent, :engine, :optional
+    class Special
+      attr_accessor :special_pattern, :specials, :left, :right
 
-      def initialize(n)
-        @engine = n
+      NULL = Regexp.new '(?!)'
+
+      def initialize(special, left, right)
+        @specials = special
+        @left = left
+        @right = right
+        if special.empty?
+          @special_pattern = NULL
+        else
+          @special_pattern = Regexp.new "([#{ Regexp.quote special.keys.sort.join }])"
+        end
+      end
+
+      def special?(s)
+        s.length == 1 && special_pattern === s
+      end
+    end
+
+    class Node
+      attr_accessor :engine, :optional, :special, :root
+
+      def initialize(engine, special)
+        @engine = engine
+        @special = special
         @children = []
       end
 
       def root?
-        parent.nil?
+        root
       end
 
       def optional?
@@ -165,65 +235,12 @@ module List
         raise NotImplementedError
       end
 
-      def char?
-        false
-      end
-
-      def left_child(n)
-        children[0] == n
-      end
-
-      def right_child(n)
-        children[-1] == n
-      end
-
-      def left?
-        return @left unless @left.nil?
-        @left = if root?
-          true
-        else
-          parent.left_child self
-        end
-      end
-      def right?
-        return @right unless @right.nil?
-        @right = if root?
-          true
-        else
-          parent.right_child self
-        end
-      end
-
-      def middle?
-        if root?
-          false
-        else
-          !( left? || right? )
-        end
-      end
-
-      def left_boundary
-        '\b'
-      end
-
-      def right_boundary
-        '\b'
-      end
-
-      def word_test
-        /\w/
-      end
-
       def pfx
         engine.pfx
       end
 
       def qmark
         engine.qmark
-      end
-
-      def bound
-        engine.bound
       end
 
       def need_group?
@@ -251,13 +268,13 @@ module List
     class Sequence < Node
 
       def initialize(engine, *constituents)
-        super(engine)
+        super(engine, nil)
         @children = constituents
       end
 
       def convert
         constituents = children.map(&:convert)
-        rx = constituents.join('')
+        rx = constituents.join
         finalize rx
       end
 
@@ -266,7 +283,7 @@ module List
     class CharClass < Node
 
       def initialize(engine, children)
-        super(engine)
+        super(engine, nil)
         @children = children
       end
 
@@ -324,7 +341,7 @@ module List
             else
               "#{ Regexp.quote s.chr }-#{ Regexp.quote e.chr }"
             end
-          end.join ''
+          end.join
           clean_specials mid
         end
       end
@@ -364,17 +381,9 @@ module List
 
     class Alternate < Node
 
-      def initialize(engine, list)
-        super(engine)
-        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, self ) }
-      end
-
-      def left_child(n)
-        left?
-      end
-
-      def right_child(n)
-        right?
+      def initialize(engine, special, list)
+        super(engine, nil)
+        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, special ) }
       end
 
       def convert
@@ -393,9 +402,17 @@ module List
 
       attr_reader :string
 
-      def initialize(engine, string)
-        super(engine)
+      def initialize(engine, special, string)
+        super(engine, special)
         @string = string
+      end
+
+      def special?(s)
+        special.special? s
+      end
+
+      def convert_special(c)
+        special.specials[c]
       end
 
       def atomic?
@@ -403,14 +420,17 @@ module List
       end
 
       def convert
-        r = if bound
-          t1 = left? && word_test === string[0]
-          t2 = right? && word_test === string[-1]
-          [ ( left_boundary if t1 ), rx(string), ( right_boundary if t2 ) ].compact.join ''
+        _convert string
+      end
+
+      def _convert(s)
+        return convert_special(s) if special?(s)
+        parts = s.split special.special_pattern
+        if parts.length == 1
+          finalize rx(parts[0])
         else
-          rx(string)
+          parts.map{ |p| _convert(p) }.join
         end
-        finalize r
       end
 
       def self.dup_seq(i)
