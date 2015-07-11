@@ -80,7 +80,7 @@ module List
       rx = root.convert
       if case_insensitive
         "(?i:#{rx})"
-      elsif atomic
+      elsif atomic && !root.atomic?
         wrap rx
       else
         rx
@@ -221,6 +221,10 @@ module List
 
       def root?
         root
+      end
+
+      def bound
+        engine.bound
       end
 
       def optional?
@@ -388,8 +392,7 @@ module List
 
       def convert
         rx = children.map(&:convert).join('|')
-        rx = wrap rx unless root?
-        finalize rx
+        finalize wrap(rx)
       end
 
       def atomic?
