@@ -159,8 +159,8 @@ module List
 
     def best_prefix(list)
       acceptable = nil
-      sizes = list.map(&:size)
-      lim = sizes.uniq.count == 1 ? list[0].size - 1 : sizes.min
+      sizes = list.map(&:size).uniq
+      lim = sizes.count == 1 ? list[0].size - 1 : sizes.min
       (1..lim).each do |l|
         c = {}
         list.each do |w|
@@ -180,8 +180,8 @@ module List
 
     def best_suffix(list)
       acceptable = nil
-      sizes = list.map(&:size)
-      lim = sizes.uniq.count == 1 ? list[0].size - 1 : sizes.min
+      sizes = list.map(&:size).uniq
+      lim = sizes.count == 1 ? list[0].size - 1 : sizes.min
       (1..lim).each do |l|
         c = {}
         list.each do |w|
