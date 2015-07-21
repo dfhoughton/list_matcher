@@ -77,6 +77,7 @@ module List
       end
       root = tree list, specials
       root.root = true
+      root.flatten
       rx = root.convert
       if case_insensitive
         "(?i:#{rx})"
