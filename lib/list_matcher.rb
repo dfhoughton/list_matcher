@@ -129,6 +129,10 @@ module List
       pfx + s + ')'
     end
 
+    def wrap_size
+      @wrap_size ||= pfx.length + 1
+    end
+
     protected
 
     def find_prefix(list)
@@ -219,6 +223,10 @@ module List
         @children = []
       end
 
+      def flatten
+        children.each{ |c| c.flatten }
+      end
+
       def root?
         root
       end
@@ -237,6 +245,52 @@ module List
 
       def convert
         raise NotImplementedError
+      end
+
+      # looks for repeating subsequences, as in ababababab, and condenses them to (?>ab){5}
+      # condensation is only done when it results in a more compact regex
+      def condense_repeats(elements)
+        (1..(elements.size/2)).each do |l|            # length of subsequence considered
+          (0...l).each do |o|                         # offset from the start of the sequence
+            dup_count = []
+            (1...(elements.size - o)/l).each do |s|   # the sub-sequence number
+              s2 = s * l + o
+              s1 = s2 - l
+              seq1 = elements[s1...s1 + l]
+              seq2 = elements[s2...s2 + l]
+              if seq1 == seq2
+                s0 = s - 1
+                counts = dup_count[s] = dup_count[s0] || [ 1, seq1.join, s1, nil ]
+                counts[0] += 1
+                counts[3]  = s2 + l
+                dup_count[s0] = nil
+              end
+            end
+            dup_count.compact!
+            if dup_count.any?
+              copy = elements.dup
+              changed = false
+              dup_count.reverse.each do |repeats, seq, start, finish|
+                if engine.wrap_size + 2 + repeats.to_s.length + seq.length < seq.length * repeats
+                  changed = true
+                  copy[start...finish] = wrap(seq) +"{#{repeats}}"
+                end
+              end
+              return copy if changed
+            end
+          end
+        end
+        elements
+      end
+
+      # iterated repeat condensation
+      def condense(elements)
+        while elements.size > 1
+          condensate = condense_repeats elements
+          break if condensate == elements
+          elements = condensate
+        end
+        elements.join
       end
 
       def pfx
@@ -277,11 +331,20 @@ module List
       end
 
       def convert
-        constituents = children.map(&:convert)
-        rx = constituents.join
+        rx = condense children.map(&:convert)
         finalize rx
       end
 
+      def flatten
+        super
+        (0...children.size).to_a.reverse.each do |i|
+          c = children[i]
+          if c.is_a? Sequence
+            children.delete_at i
+            children.insert i, *c.children
+          end
+        end
+      end
     end
 
     class CharClass < Node
@@ -432,40 +495,15 @@ module List
         if parts.length == 1
           finalize rx(parts[0])
         else
-          parts.map{ |p| _convert(p) }.join
-        end
-      end
-
-      def self.dup_seq(i)
-        ( @dup_seq ||= [] )[i] ||= begin
-          seq = '.' * i
-          rx = Regexp.new "(#{seq})\\1+"
-          lambda do |leaf, st|
-            if m = rx.match(st)
-              repeats = m[0].length / i
-              counter = "){#{repeats}}"
-              mid = leaf.rx(m.captures[0])
-              if mid.length * ( repeats - 1 ) > leaf.pfx.length + counter.length
-                pfx = m.pre_match
-                sfx = m.post_match
-                return leaf.rx(pfx) + leaf.pfx + mid + counter + leaf.rx(sfx)
-              end
-            end
-          end
+          condense parts.map{ |p| _convert(p) }
         end
       end
 
       def rx(s)
-        if s.length < 4
+        if s.length < 5
           Regexp.quote s
         else
-          lim = ( s.length / 2.0 ).to_i
-          (1..lim).to_a.reverse.each do |i|
-            m = self.class.dup_seq i
-            r = m.( self, s )
-            return r if r
-          end
-          Regexp.quote s
+          condense s.chars.map{ |c| Regexp.quote c }
         end
       end
     end
