@@ -98,26 +98,6 @@ module List
       Special.new special, l, r
     end
 
-    def tree(list, special)
-      root = if list.size == 1
-        Leaf.new self, special, list[0]
-      else
-        if prefix = find_prefix(list)
-          l = prefix.length
-          remainder = list.map{ |s| s[l..-1] }.select{ |s| s.length > 0 }
-        end
-        body = find_body( special, remainder || list )
-        if prefix
-          body.optional = prefix.length == list[0].length
-          prefix = Leaf.new self, special, prefix
-          Sequence.new self, prefix, body
-        else
-          body
-        end
-      end
-      root
-    end
-
     def pfx
       @pfx ||= backtracking ? '(?:' : '(?>'
     end
@@ -134,64 +114,86 @@ module List
       @wrap_size ||= pfx.length + 1
     end
 
-    protected
-
-    def find_prefix(list)
-      last_candidate = nil
-      (0...list[0].length).each do |l|
-        candidate = list[0][0..l]
-        (1...list.length).each do |w|
-          return last_candidate unless list[w][0..l] == candidate
-        end
-        last_candidate = candidate
-      end
-      return last_candidate
-    end
-
-    def find_suffix(list)
-      (1...list[0].length).each do |l|
-        candidate = list[0][l..-1]
-        bad = false
-        (1...list.length).each do |w|
-          if list[w][l..-1] != candidate
-            bad = true
-            break
-          end
-        end
-        return candidate unless bad
-      end
-      nil
-    end
-
-    def find_body(special, list)
+    def tree(list, special)
       if list.size == 1
         Leaf.new self, special, list[0]
-      else
-        if sfx = find_suffix(list)
-          l = sfx.length
-          list = list.map{ |w| w[0...-l] }
-        end
-        chars = list.select{ |w| w.length == 1 && !special.special?(w) }
-        body = if chars.length > 1
+      elsif list.all?{ |w| w.length == 1 }
+        chars = list.select{ |w| !special.special?(w) }
+        if chars.size > 1
           list -= chars
-          if list.empty?
-            CharClass.new self, chars
-          else
-            c = CharClass.new self, chars
-            a = Alternate.new( self, special, list )
-            a.children.unshift c
-            a
-          end
-        else
-          Alternate.new( self, special, list )
+          c = CharClass.new self, chars
         end
-        if sfx
-          sfx = Leaf.new self, special, sfx
-          Sequence.new self, body, sfx
+        a = Alternate.new self, special, list unless list.empty?
+        a.children.unshift c if a && c
+        a || c
+      elsif c = best_prefix(list)   # found a fixed-width prefix pattern
+        if optional = c[1].include?('')
+          c[1].reject!{ |w| w == '' }
+        end
+        c1 = tree c[0], special
+        c2 = tree c[1], special
+        c2.optional = optional
+        Sequence.new self, c1, c2
+      elsif c = best_suffix(list)   # found a fixed-width suffix pattern
+        if optional = c[0].include?('')
+          c[0].reject!{ |w| w == '' }
+        end
+        c1 = tree c[0], special
+        c1.optional = optional
+        c2 = tree c[1], special
+        Sequence.new self, c1, c2
+      else
+        grouped = list.group_by{ |w| w[0] }
+        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !special.special?(w[0]) }.map{ |v, _| v }
+        if chars.size > 1
+          list -= chars
+          c = CharClass.new self, chars
+        end
+        a = Alternate.new self, special, list
+        a.children.unshift c if c
+        a
+      end
+    end
+
+    protected
+
+    def best_prefix(list)
+      acceptable = nil
+      (1..list.map(&:size).min).each do |l|
+        c = {}
+        list.each do |w|
+          pfx = w[0...l]
+          sfx = w[l..-1]
+          ( c[pfx] ||= [] ) << sfx
+        end
+        c = c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{|a| a[0] }, k ] }
+        if c.size == 1
+          acceptable = c[0]
         else
-          body
+          return acceptable
         end
       end
+      acceptable
+    end
+
+    def best_suffix(list)
+      acceptable = nil
+      (1..list.map(&:size).min).each do |l|
+        c = {}
+        list.each do |w|
+          i = w.length - l
+          pfx = w[0...i]
+          sfx = w[i..-1]
+          ( c[sfx] ||= [] ) << pfx
+        end
+        c = c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{|a| a[0] }, k ] }
+        if c.size == 1
+          acceptable = c[0].reverse
+        else
+          return acceptable
+        end
+      end
+      acceptable
     end
 
     class Special
@@ -358,6 +360,8 @@ module List
       def atomic?
         true
       end
+
+      def flatten; end
 
       def convert
         rx = if bound && !middle?
