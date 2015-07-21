@@ -159,7 +159,9 @@ module List
 
     def best_prefix(list)
       acceptable = nil
-      sizes = list.map(&:size).uniq
+      sizes      = list.map(&:size)
+      min        = sizes.reduce 0, :+
+      sizes.uniq!
       lim = sizes.count == 1 ? list[0].size - 1 : sizes.min
       (1..lim).each do |l|
         c = {}
@@ -168,11 +170,13 @@ module List
           sfx = w[l..-1]
           ( c[pfx] ||= [] ) << sfx
         end
-        c = c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{|a| a[0] }, k ] }
+        c = cross_products c
         if c.size == 1
-          acceptable = c[0]
-        else
-          return acceptable
+          count = count(c)
+          if count < min
+            min = count
+            acceptable = c[0]
+          end
         end
       end
       acceptable
@@ -180,24 +184,38 @@ module List
 
     def best_suffix(list)
       acceptable = nil
-      sizes = list.map(&:size).uniq
+      sizes      = list.map(&:size)
+      min        = sizes.reduce 0, :+
+      sizes.uniq!
       lim = sizes.count == 1 ? list[0].size - 1 : sizes.min
       (1..lim).each do |l|
         c = {}
         list.each do |w|
-          i = w.length - l
+          i   = w.length - l
           pfx = w[0...i]
           sfx = w[i..-1]
           ( c[sfx] ||= [] ) << pfx
         end
-        c = c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{|a| a[0] }, k ] }
+        c = cross_products c
         if c.size == 1
-          acceptable = c[0].reverse
-        else
-          return acceptable
+          count = count(c)
+          if count < min
+            min = count
+            acceptable = c[0].reverse
+          end
         end
       end
       acceptable
+    end
+
+    # discover cross products -- e.g., {this, that} X {cat, dog}
+    def cross_products(c)
+      c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{ |a| a[0] }, k ] }
+    end
+
+    def count(c)
+      c = c[0]
+      c[0].map(&:size).reduce( 0, :+ ) + c[1].map(&:size).reduce( 0, :+ )
     end
 
     class Special
