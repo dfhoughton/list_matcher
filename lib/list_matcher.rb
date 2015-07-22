@@ -449,13 +449,13 @@ module List
 
       def clean_specials(s)
         if engine.case_insensitive
-          s.gsub! /0-9_a-z/, '\w'
+          s.gsub! /0-9(.*)_(.*)a-z/, '\w\1\2'
         else
-          s.gsub! /0-9A-Z_a-z/, '\w'
+          s.gsub! /0-9(.*)A-Z(.*)_(.*)a-z/, '\w\1\2\3'
         end
         s.gsub! /\t-\r /, '\s'
         s.gsub! /0-9/, '\d'
-        if s =~ /^\\\w$/
+        if s =~ /\A\\\w\z/
           s
         else
           "[#{s}]"
