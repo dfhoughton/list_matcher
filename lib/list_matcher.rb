@@ -296,9 +296,11 @@ module List
               copy = elements.dup
               changed = false
               dup_count.reverse.each do |repeats, seq, start, finish|
-                if engine.wrap_size + 2 + repeats.to_s.length + seq.length < seq.length * repeats
+                a  = atomy? seq
+                sl = seq.length
+                if ( a ? 0 : engine.wrap_size ) + 2 + repeats.to_s.length + sl < sl * repeats
                   changed = true
-                  copy[start...finish] = wrap(seq) +"{#{repeats}}"
+                  copy[start...finish] = ( a ? seq : wrap(seq) ) + "{#{repeats}}"
                 end
               end
               return copy if changed
@@ -306,6 +308,11 @@ module List
           end
         end
         elements
+      end
+
+      # infer atomic patterns
+      def atomy?(s)
+        s.size == 1 || /\A(?>\\\w|\[(?>[^\[\]\\]|\\.)++\])\z/ === s
       end
 
       # iterated repeat condensation
