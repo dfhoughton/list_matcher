@@ -88,16 +88,6 @@ module List
       end
     end
 
-    def init_specials(list)
-      special = @special.dup
-      if bound
-        l, r = self.class.unused_chars list + @special.keys, 2
-        special[l] = @left_bound
-        special[r] = @right_bound
-      end
-      Special.new special, l, r
-    end
-
     def pfx
       @pfx ||= backtracking ? '(?:' : '(?>'
     end
@@ -156,6 +146,16 @@ module List
     end
 
     protected
+
+    def init_specials(list)
+      special = @special.dup
+      if bound
+        l, r = self.class.unused_chars list + @special.keys, 2
+        special[l] = @left_bound
+        special[r] = @right_bound
+      end
+      Special.new special, l, r
+    end
 
     def best_prefix(list)
       acceptable = nil
