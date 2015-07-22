@@ -29,6 +29,8 @@ module List
     end
 
     W = Regexp.new '\w'
+    # to make a replacement of Regexp.quote that ignores characters that only need quoting inside character classes
+    QRX = Regexp.new "([" + ( (1..255).map(&:chr).select{ |c| Regexp.quote(c) != c } - %w(-) ).map{ |c| Regexp.quote c }.join + "])"
 
     def initialize(
           atomic:           true,
@@ -143,6 +145,14 @@ module List
         a.children.unshift c if c
         a
       end
+    end
+
+    def self.quote(s)
+      s.gsub(QRX) { |c| Regexp.quote c }
+    end
+
+    def quote(s)
+      self.class.quote s
     end
 
     protected
@@ -353,6 +363,10 @@ module List
         false
       end
 
+      def quote(s)
+        engine.quote s
+      end
+
     end
 
     class Sequence < Node
@@ -457,6 +471,7 @@ module List
       end
 
       def cc_quote(c)
+        return Regexp.quote(c) if c =~ /\s/
         case c
         when '[' then '\['
         when ']' then '\]'
@@ -540,9 +555,9 @@ module List
 
       def rx(s)
         if s.length < 5
-          Regexp.quote s
+          quote s
         else
-          condense s.chars.map{ |c| Regexp.quote c }
+          condense s.chars.map{ |c| quote c }
         end
       end
     end
