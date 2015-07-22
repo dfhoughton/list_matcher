@@ -59,9 +59,9 @@ module List
     def pattern(list)
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:trim).select!{ |s| s.length > 0 } if trim
-      list.map!(&:downcase)                         if case_insensitive
-      list = list.uniq.sort
       return nil if list.empty?
+      list.map!(&:downcase) if case_insensitive
+      list = list.uniq.sort
       
       specials = init_specials list
       if bound
@@ -381,8 +381,34 @@ module List
 
     class CharClass < Node
 
+      attr_accessor :word, :num, :space
+
+      WORD_CHARS    = (1..255).map(&:chr).select{ |c| /\w/ === c }.freeze
+      CI_WORD_CHARS = WORD_CHARS.map(&:downcase).uniq.freeze
+      NUM_CHARS     = CI_WORD_CHARS.select{ |c| /\d/ === c }.freeze
+      SPACE_CHARS   = (1..255).map(&:chr).select{ |c| /\s/ === c }.freeze
+
       def initialize(engine, children)
         super(engine, nil)
+        if engine.case_insensitive
+          if ( CI_WORD_CHARS - children ).empty?
+            self.word = true
+            self.num = false
+            children -= CI_WORD_CHARS
+          end
+        elsif ( WORD_CHARS - children ).empty?
+          self.word = true
+          self.num = false
+          children -= WORD_CHARS
+        end
+        if num.nil? && ( NUM_CHARS - children ).empty?
+          self.num = true
+          children -= NUM_CHARS
+        end
+        if ( SPACE_CHARS - children ).empty?
+          self.space = true
+          children -= SPACE_CHARS
+        end
         @children = children
       end
 
@@ -393,35 +419,7 @@ module List
       def flatten; end
 
       def convert
-        rx = if bound && !middle?
-          word_chars = children.select{ |c| word_test === c }
-          non_word = children - word_chars
-          if word_chars.any?
-            word_chars = char_class word_chars
-            if left?
-              word_chars = left_boundary + word_chars
-            end
-            if right?
-              word_chars += right_boundary
-            end
-          end
-          if non_word.any?
-            non_word = char_class non_word
-          end
-          if word_chars && non_word
-            wrap word_chars + '|' + non_word
-          elsif word_chars
-            if need_group?
-              wrap word_chars
-            else
-              word_chars
-            end
-          else
-            non_word
-          end
-        else
-          char_class children
-        end
+        rx = char_class children
         if optional?
           rx += qmark
         end
@@ -430,35 +428,42 @@ module List
 
       # takes a list of characters and returns a character class expression matching it
       def char_class(chars)
-        rs = ranges(chars)
-        if rs.size == 1 && rs[0][0] == rs[0][1]
-          Regexp.quote rs[0][0].chr
+        mid = if chars.empty?
+          ''
         else
-          mid = rs.map do |s, e|
-            if s == e
-              Regexp.quote s.chr
-            elsif e == s + 1
-              "#{ Regexp.quote s.chr }#{ Regexp.quote e.chr }"
-            else
-              "#{ Regexp.quote s.chr }-#{ Regexp.quote e.chr }"
-            end
-          end.join
-          clean_specials mid
+          rs = ranges(chars)
+          if rs.size == 1 && rs[0][0] == rs[0][1]
+            cc_quote rs[0][0].chr
+          else
+            mid = rs.map do |s, e|
+              if s == e
+                cc_quote s.chr
+              elsif e == s + 1
+                "#{ cc_quote s.chr }#{ cc_quote e.chr }"
+              else
+                "#{ cc_quote s.chr }-#{ cc_quote e.chr }"
+              end
+            end.join
+          end
+        end
+        mid += '\w' if word
+        mid += '\d' if num
+        mid += '\s' if space
+        if mid.length == 1 || mid =~ /\A\\\w\z/
+          mid
+        else
+          "[#{mid}]"
         end
       end
 
-      def clean_specials(s)
-        if engine.case_insensitive
-          s.gsub! /0-9(.*)_(.*)a-z/, '\w\1\2'
-        else
-          s.gsub! /0-9(.*)A-Z(.*)_(.*)a-z/, '\w\1\2\3'
-        end
-        s.gsub! /\t-\r /, '\s'
-        s.gsub! /0-9/, '\d'
-        if s =~ /\A\\\w\z/
-          s
-        else
-          "[#{s}]"
+      def cc_quote(c)
+        case c
+        when '[' then '\['
+        when ']' then '\]'
+        when '\\' then '\\\\'
+        when '-' then '\-'
+        when '^' then '\^'
+        else c
         end
       end
 
