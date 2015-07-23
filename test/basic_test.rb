@@ -42,6 +42,26 @@ class BasicTest < Minitest::Test
     end
   end
 
+  def test_num_chars
+    words = (0..9).map(&:to_s)
+    rx = List::Matcher.pattern words
+    assert_equal '\d', rx
+    rx = Regexp.new rx
+    words.each do |w|
+      assert rx === w
+    end
+  end
+
+  def test_space_chars
+    words = (1..255).map(&:chr).select{ |c| c =~ /\s/ }
+    rx = List::Matcher.pattern words
+    assert_equal '\s', rx
+    rx = Regexp.new rx
+    words.each do |w|
+      assert rx === w
+    end
+  end
+
   def test_bounds
     words = %w(cat dog)
     rx = List::Matcher.pattern words, bound: true
@@ -63,6 +83,16 @@ class BasicTest < Minitest::Test
     words = %w(the them)
     rx = List::Matcher.pattern words
     assert_equal '(?>them?+)', rx
+    rx = Regexp.new rx
+    words.each do |w|
+      rx === w
+    end
+  end
+
+  def test_opt_prefix
+    words = %w(at cat)
+    rx = List::Matcher.pattern words
+    assert_equal '(?>c?+at)', rx
     rx = Regexp.new rx
     words.each do |w|
       rx === w

@@ -27,12 +27,12 @@ m = List::Matcher.new
 puts m.pattern %w( cat dog )                     # (?>cat|dog)
 puts m.pattern %w( cat rat )                     # (?>[cr]at)
 puts m.pattern %w( cat camel )                   # (?>ca(?>mel|t))
-puts m.pattern %w( catttttttttt )                # (?>ca(?>tt){5})
-puts m.pattern %w( cat-t-t-t-t-t-t-t-t-t )       # (?>ca(?>(?>t\-){4}){2}t\-t)
-puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]a(?>tt){5})
+puts m.pattern %w( catttttttttt )                # (?>cat{10})
+puts m.pattern %w( cat-t-t-t-t-t-t-t-t-t )       # (?>ca(?>t-){9}t)
+puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]at{10})
 puts m.pattern %w( cad bad dad )                 # (?>[b-d]ad)
 puts m.pattern %w( cat catalog )                 # (?>cat(?>alog)?+)
-puts m.pattern (1..31).to_a                      # (?>[1-9]|1\d|2\d|3[01])
+puts m.pattern (1..31).to_a                      # (?>[4-9]|1\d?+|2\d?+|3[01]?+)
 ```
 
 ## Contributing
