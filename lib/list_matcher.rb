@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -44,7 +44,7 @@ module List
       @backtracking     = backtracking
       @trim             = trim
       @case_insensitive = case_insensitive
-      @special          = special.dup
+      @special          = deep_dup special
       @bound            = !!bound
       if bound.is_a? Hash
         @word_test   = bound[:test]  || W
@@ -55,29 +55,19 @@ module List
         @left_bound  = '\b'
         @right_bound = '\b'
       end
-      raise "special keys must be characters" if @special.keys.any?{ |k| !( k.is_a?(String) && k.length == 1 ) }
+      special.keys.each do |k|
+        raise "special variable #{k} is neither a string not a regex" unless k.is_a?(String) || k.is_a?(Regexp)
+      end
     end
 
     def pattern(list)
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:trim).select!{ |s| s.length > 0 } if trim
       return nil if list.empty?
-      list.map!(&:downcase) if case_insensitive
-      list = list.uniq.sort
-      
-      specials = init_specials list
-      if bound
-        list = list.map do |w|
-          if @word_test === w[0]
-            w = specials.left + w
-          end
-          if @word_test === w[-1]
-            w += specials.right
-          end
-          w
-        end
-      end
-      root = tree list, specials
+      specializer = Special.new self, @special, list
+      list = specializer.normalize
+
+      root = tree list, specializer
       root.root = true
       root.flatten
       rx = root.convert
@@ -110,7 +100,7 @@ module List
       if list.size == 1
         Leaf.new self, special, list[0]
       elsif list.all?{ |w| w.length == 1 }
-        chars = list.select{ |w| !special.special?(w) }
+        chars = list.select{ |w| !special.special(w) }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
@@ -136,7 +126,7 @@ module List
         Sequence.new self, c1, c2
       else
         grouped = list.group_by{ |w| w[0] }
-        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !special.special?(w[0]) }.map{ |v, _| v }
+        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !special.special(w[0]) }.map{ |v, _| v }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
@@ -157,14 +147,14 @@ module List
 
     protected
 
-    def init_specials(list)
-      special = @special.dup
-      if bound
-        l, r = self.class.unused_chars list + @special.keys, 2
-        special[l] = @left_bound
-        special[r] = @right_bound
+    def deep_dup(o)
+      if o.is_a?(Hash)
+        Hash[o.map{ |k, v| [ deep_dup(k), deep_dup(v) ] }]
+      elsif o.is_a?(Array)
+        o.map{ |v| deep_dup v }
+      else
+        o.dup
       end
-      Special.new special, l, r
     end
 
     def best_prefix(list)
@@ -229,23 +219,123 @@ module List
     end
 
     class Special
-      attr_accessor :special_pattern, :specials, :left, :right
+      attr_reader :engine
+      attr_accessor :specials, :list, :left, :right
 
       NULL = Regexp.new '(?!)'
 
-      def initialize(special, left, right)
-        @specials = special
-        @left = left
-        @right = right
-        if special.empty?
-          @special_pattern = NULL
-        else
-          @special_pattern = Regexp.new "([#{ Regexp.quote special.keys.sort.join }])"
+      def initialize( engine, specials, list )
+        @engine = engine
+        @list = list
+        max = 0
+        list.each do |w|
+          w.chars.each{ |c| i = c.ord; max = i if i > max }
+        end
+        @specials = [].tap do |ar|
+          specials.sort do |a, b|
+            a = a.first
+            b = b.first
+            s1 = a.is_a? String
+            s2 = b.is_a? String
+            if s1 && s2
+              b <=> a
+            elsif s1
+              -1
+            elsif s2
+              1
+            else
+              s = a.to_s.length - b.to_s.length
+              s == 0 ? a.to_s <=> b.to_s : s
+            end
+          end.each do |var, opts|
+            c = ( max += 1 ).chr
+            sp = if opts.is_a? Hash
+              pat = opts.delete :pattern
+              raise "variable #{var} requires a pattern" unless pat || var.is_a?(Regexp)
+              pat ||= var.to_s
+              SpecialPattern.new c, var, pat, **opts
+            elsif opts.is_a? String
+              SpecialPattern.new engine, c, var, opts
+            elsif var.is_a?(Regexp) && opts.nil?
+              SpecialPattern.new engine, c, var, var.to_s
+            else
+              raise "variable #{var} requires a pattern"
+            end
+            ar << sp
+          end
+        end
+        if engine.bound
+          c = ( max += 1 ).chr
+          @left = SpecialPattern.new engine, c, c, engine.left_bound
+          @specials << @left
+          c = ( max += 1 ).chr
+          @right = SpecialPattern.new engine, c, c, engine.right_bound
+          @specials << @right
         end
       end
 
-      def special?(s)
-        s.length == 1 && special_pattern === s
+      def special_map
+        @special_map ||= {}
+      end
+
+      def no_specials?
+        if @no_specials.nil?
+          @no_specials = special_map.empty?
+        end
+        @no_specials
+      end
+
+      def special(s)
+        return nil if no_specials? || s.length > 1
+        special_map[s]
+      end
+
+      # reduce the list to a version ready for pattern generation
+      def normalize
+        rx = if specials.empty?
+          NULL
+        else
+          Regexp.new '(' + specials.map(&:var).map(&:to_s).join('|') + ')'
+        end
+        l = r = false
+        list = self.list.uniq.map do |w|
+          parts = w.split rx
+          e = parts.size - 1
+          (0..e).map do |i|
+            p = parts[i]
+            if rx === p
+              warn "rx: #{rx}; p: #{p}"
+              p = specials.detect{ |sp| sp.var === p }
+              special_map[p.char] = p
+              if engine.bound
+                if i == 0 && p.left
+                  p = "#{left}#{p}" if t
+                  l = true
+                end
+                if i == e && p.right
+                  p = "#{p}#{right}"
+                  r = true
+                end
+              end
+            else
+              p = p.downcase if engine.case_insensitive
+              if engine.bound
+                if i == 0 && engine.word_test === p[0]
+                  p = "#{left}#{p}"
+                  l = true
+                end
+                if i == e && engine.word_test === p[-1]
+                  p = "#{p}#{right}"
+                  r = true
+                end
+              end
+            end
+            p
+          end.join
+        end.uniq.sort
+        special_map[left.char] = left if l
+        special_map[right.char] = right if r
+        list
       end
     end
 
@@ -367,6 +457,39 @@ module List
         engine.quote s
       end
 
+    end
+
+    class SpecialPattern < Node
+      attr_accessor :char, :var, :left, :right
+      def initialize(engine, char, var, pat, atomic: false, word_left: false, word_right: false)
+        super(engine, nil)
+        @char = char
+        @var = var.is_a?(String) ? Regexp.new(Regexp.quote(var)) : var
+        @pat = pat
+        @atomic = !!atomic
+        @left = !!word_left
+        @right = !!word_right
+      end
+
+      def left?
+        @left
+      end
+
+      def right?
+        @right
+      end
+
+      def atomic?
+        @atomic
+      end
+
+      def to_s
+        self.char
+      end
+
+      def convert
+        @pat
+      end
     end
 
     class Sequence < Node
@@ -527,38 +650,26 @@ module List
         @string = string
       end
 
-      def special?(s)
-        special.special? s
-      end
-
-      def convert_special(c)
-        special.specials[c]
-      end
-
       def atomic?
-        string.length == 1
+        if string.length == 1
+          if s = special.special(string)
+            s.atomic?
+          else
+            true
+          end
+        end
       end
 
       def convert
-        _convert string
-      end
-
-      def _convert(s)
-        return convert_special(s) if special?(s)
-        parts = s.split special.special_pattern
-        if parts.length == 1
-          finalize rx(parts[0])
-        else
-          condense parts.map{ |p| _convert(p) }
+        elements = string.chars.map do |c|
+          if s = special.special(c)
+            s.convert
+          else
+            quote c
+          end
         end
-      end
-
-      def rx(s)
-        if s.length < 5
-          quote s
-        else
-          condense s.chars.map{ |c| quote c }
-        end
+        rx = condense elements
+        finalize rx
       end
     end
 
