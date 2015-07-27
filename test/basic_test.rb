@@ -118,4 +118,15 @@ class BasicTest < Minitest::Test
       assert rx === w
     end
   end
+
+  def test_fancy_rx
+    words = ['   cat   dog  ']
+    good = ['the cat  dog is an odd beast']
+    bad = ['the catdog is an odd beast', 'the cat doggy is an odd beast', 'the scat dog is an odd beast']
+    rx = List::Matcher.pattern words, bound: true, normalize_whitespace: true
+    assert_equal '(?>\bcat\s++dog\b)', rx
+    rx = Regexp.new rx
+    assert good.all?{ |w| rx === w }, 'not bothered by odd space'
+    assert bad.none?{ |w| rx === w }, 'needs interior space and boundaries'
+  end
 end

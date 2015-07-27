@@ -41,7 +41,7 @@ module List
         @right_bound = '\b'
       end
       if normalize_whitespace
-        special[' '] = { pattern: '\s++' }
+        @special[' '] = { pattern: '\s++' }
       end
       special.keys.each do |k|
         raise "special variable #{k} is neither a string not a regex" unless k.is_a?(String) || k.is_a?(Regexp)
@@ -50,7 +50,7 @@ module List
 
     def pattern(list)
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
-      list.map!(&:trim).select!{ |s| s.length > 0 } if trim
+      list.map!(&:strip).select!{ |s| s.length > 0 } if trim
       list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
       return nil if list.empty?
       specializer = Special.new self, @special, list
@@ -251,7 +251,7 @@ module List
               pat = opts.delete :pattern
               raise "variable #{var} requires a pattern" unless pat || var.is_a?(Regexp)
               pat ||= var.to_s
-              SpecialPattern.new c, var, pat, **opts
+              SpecialPattern.new engine, c, var, pat, **opts
             elsif opts.is_a? String
               SpecialPattern.new engine, c, var, opts
             elsif var.is_a?(Regexp) && opts.nil?
