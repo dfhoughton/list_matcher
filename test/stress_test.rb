@@ -12,7 +12,7 @@ class StressTest < Minitest::Test
   end
 
   def test_really_big
-    basic_test 50000, 97..122, 8..8
+    basic_test 50000, 97..122, 4..8
   end
 
   def basic_test(n, range, max)
