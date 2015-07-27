@@ -129,4 +129,14 @@ class BasicTest < Minitest::Test
     assert good.all?{ |w| rx === w }, 'not bothered by odd space'
     assert bad.none?{ |w| rx === w }, 'needs interior space and boundaries'
   end
+
+  def test_special_borders
+    words = (1..31).to_a
+    rx = List::Matcher.pattern words, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)' }
+    rx = Regexp.new rx
+    good = words.map{ |n| "a#{n}b" }
+    bad = words.map{ |n| "0#{n}0" }
+    assert good.all?{ |w| rx === w }
+    assert bad.none?{ |w| rx === w }
+  end
 end
