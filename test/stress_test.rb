@@ -20,6 +20,7 @@ class StressTest < Minitest::Test
     good = words[0...n/10]
     bad = words[n/10..-1]
     rx = Regexp.new List::Matcher.pattern( good, bound: true )
+    puts good.inspect unless good.all?{ |w| rx === w }
     good.each do |w|
       assert rx === w, "#{w} is good for #{rx}"
     end

@@ -85,7 +85,7 @@ class BasicTest < Minitest::Test
     assert_equal '(?>them?+)', rx
     rx = Regexp.new rx
     words.each do |w|
-      rx === w
+      assert rx === w
     end
   end
 
@@ -95,7 +95,27 @@ class BasicTest < Minitest::Test
     assert_equal '(?>c?+at)', rx
     rx = Regexp.new rx
     words.each do |w|
-      rx === w
+      assert rx === w
+    end
+  end
+
+  def test_special_string
+    words = ['cat dog']
+    rx = List::Matcher.pattern words, special: { ' ' => '\s++' }
+    assert_equal '(?>cat\s++dog)', rx
+    rx = Regexp.new rx
+    words.each do |w|
+      assert rx === w
+    end
+  end
+
+  def test_special_rx
+    words = %w(year year2000 year1999)
+    rx = List::Matcher.pattern words, special: { /(?<!\d)\d{4}(?!\d)/ => nil }
+    assert_equal '(?>year(?-mix:(?<!\d)\d{4}(?!\d))?+)', rx
+    rx = Regexp.new rx
+    words.each do |w|
+      assert rx === w
     end
   end
 end

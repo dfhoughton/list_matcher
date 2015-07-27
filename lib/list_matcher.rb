@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -11,41 +11,26 @@ module List
       self.new(**opts).pattern list
     end
 
-    def self.unused_chars(list, n=1)
-      used = Set.new
-      list.compact.map(&:to_s).each do |w|
-        w.chars.each{ |c| used << c }
-      end
-      s = 40
-      available = []
-      while available.length < n
-        c = s.chr
-        unless used.include? c
-          available << c
-        end
-        s += 1
-      end
-      available
-    end
-
     W = Regexp.new '\w'
     # to make a replacement of Regexp.quote that ignores characters that only need quoting inside character classes
     QRX = Regexp.new "([" + ( (1..255).map(&:chr).select{ |c| Regexp.quote(c) != c } - %w(-) ).map{ |c| Regexp.quote c }.join + "])"
 
     def initialize(
-          atomic:           true,
-          backtracking:     false,
-          bound:            false,
-          trim:             false,
-          case_insensitive: false,
-          special:          {}
+          atomic:               true,
+          backtracking:         false,
+          bound:                false,
+          trim:                 false,
+          case_insensitive:     false,
+          normalize_whitespace: false,
+          special:              {}
         )
-      @atomic           = atomic
-      @backtracking     = backtracking
-      @trim             = trim
-      @case_insensitive = case_insensitive
-      @special          = deep_dup special
-      @bound            = !!bound
+      @atomic               = atomic
+      @backtracking         = backtracking
+      @trim                 = trim || normalize_whitespace
+      @case_insensitive     = case_insensitive
+      @special              = deep_dup special
+      @bound                = !!bound
+      @normalize_whitespace = normalize_whitespace
       if bound.is_a? Hash
         @word_test   = bound[:test]  || W
         @left_bound  = bound[:left]  || '\b'
@@ -55,6 +40,9 @@ module List
         @left_bound  = '\b'
         @right_bound = '\b'
       end
+      if normalize_whitespace
+        special[' '] = { pattern: '\s++' }
+      end
       special.keys.each do |k|
         raise "special variable #{k} is neither a string not a regex" unless k.is_a?(String) || k.is_a?(Regexp)
       end
@@ -63,6 +51,7 @@ module List
     def pattern(list)
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:trim).select!{ |s| s.length > 0 } if trim
+      list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
       return nil if list.empty?
       specializer = Special.new self, @special, list
       list = specializer.normalize
@@ -98,7 +87,14 @@ module List
 
     def tree(list, special)
       if list.size == 1
-        Leaf.new self, special, list[0]
+        leaves = list[0].chars.map do |c|
+          special.special(c) || Leaf.new( self, c )
+        end
+        if leaves.length == 1
+          leaves.first
+        else
+          Sequence.new self, *leaves
+        end
       elsif list.all?{ |w| w.length == 1 }
         chars = list.select{ |w| !special.special(w) }
         if chars.size > 1
@@ -152,6 +148,8 @@ module List
         Hash[o.map{ |k, v| [ deep_dup(k), deep_dup(v) ] }]
       elsif o.is_a?(Array)
         o.map{ |v| deep_dup v }
+      elsif o.nil?
+        o
       else
         o.dup
       end
@@ -210,7 +208,7 @@ module List
 
     # discover cross products -- e.g., {this, that} X {cat, dog}
     def cross_products(c)
-      c.to_a.group_by{ |_, v| v }.map{|k,v| [ v.map{ |a| a[0] }, k ] }
+      c.to_a.group_by{ |_, v| v.sort }.map{ |k,v| [ v.map{ |a| a[0] }.sort, k ] }
     end
 
     def count(c)
@@ -257,7 +255,7 @@ module List
             elsif opts.is_a? String
               SpecialPattern.new engine, c, var, opts
             elsif var.is_a?(Regexp) && opts.nil?
-              SpecialPattern.new engine, c, var, var.to_s
+              SpecialPattern.new engine, c, var, nil
             else
               raise "variable #{var} requires a pattern"
             end
@@ -286,7 +284,6 @@ module List
       end
 
       def special(s)
-        return nil if no_specials? || s.length > 1
         special_map[s]
       end
 
@@ -304,7 +301,6 @@ module List
           (0..e).map do |i|
             p = parts[i]
             if rx === p
-              warn "rx: #{rx}; p: #{p}"
               p = specials.detect{ |sp| sp.var === p }
               special_map[p.char] = p
               if engine.bound
@@ -372,6 +368,93 @@ module List
         raise NotImplementedError
       end
 
+      def pfx
+        engine.pfx
+      end
+
+      def qmark
+        engine.qmark
+      end
+
+      def finalize(rx)
+        if optional?
+          rx = wrap rx unless atomic?
+          rx += qmark
+        end
+        rx
+      end
+
+      def wrap(s)
+        engine.wrap s
+      end
+
+      def atomic?
+        false
+      end
+
+      def quote(s)
+        engine.quote s
+      end
+
+    end
+
+    class SpecialPattern < Node
+      attr_accessor :char, :var, :left, :right
+      def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), word_left: false, word_right: false)
+        super(engine, nil)
+        @char = char
+        @var = var.is_a?(String) ? Regexp.new(Regexp.quote(var)) : var
+        @pat = pat || var.to_s
+        @atomic = !!atomic
+        @left = !!word_left
+        @right = !!word_right
+      end
+
+      def left?
+        @left
+      end
+
+      def right?
+        @right
+      end
+
+      def atomic?
+        @atomic
+      end
+
+      def to_s
+        self.char
+      end
+
+      def convert
+        rx = @pat
+        finalize rx
+      end
+    end
+
+    class Sequence < Node
+
+      def initialize(engine, *constituents)
+        super(engine, nil)
+        @children = constituents
+      end
+
+      def convert
+        rx = condense children.map(&:convert)
+        finalize rx
+      end
+
+      def flatten
+        super
+        (0...children.size).to_a.reverse.each do |i|
+          c = children[i]
+          if c.is_a?(Sequence) && !c.optional?
+            children.delete_at i
+            children.insert i, *c.children
+          end
+        end
+      end
+
       # looks for repeating subsequences, as in ababababab, and condenses them to (?>ab){5}
       # condensation is only done when it results in a more compact regex
       def condense_repeats(elements)
@@ -423,96 +506,6 @@ module List
           elements = condensate
         end
         elements.join
-      end
-
-      def pfx
-        engine.pfx
-      end
-
-      def qmark
-        engine.qmark
-      end
-
-      def need_group?
-        optional? || !atomic?
-      end
-
-      def finalize(rx)
-        if optional?
-          rx = wrap rx unless atomic?
-          rx += qmark
-        end
-        rx
-      end
-
-      def wrap(s)
-        engine.wrap s
-      end
-
-      def atomic?
-        false
-      end
-
-      def quote(s)
-        engine.quote s
-      end
-
-    end
-
-    class SpecialPattern < Node
-      attr_accessor :char, :var, :left, :right
-      def initialize(engine, char, var, pat, atomic: false, word_left: false, word_right: false)
-        super(engine, nil)
-        @char = char
-        @var = var.is_a?(String) ? Regexp.new(Regexp.quote(var)) : var
-        @pat = pat
-        @atomic = !!atomic
-        @left = !!word_left
-        @right = !!word_right
-      end
-
-      def left?
-        @left
-      end
-
-      def right?
-        @right
-      end
-
-      def atomic?
-        @atomic
-      end
-
-      def to_s
-        self.char
-      end
-
-      def convert
-        @pat
-      end
-    end
-
-    class Sequence < Node
-
-      def initialize(engine, *constituents)
-        super(engine, nil)
-        @children = constituents
-      end
-
-      def convert
-        rx = condense children.map(&:convert)
-        finalize rx
-      end
-
-      def flatten
-        super
-        (0...children.size).to_a.reverse.each do |i|
-          c = children[i]
-          if c.is_a? Sequence
-            children.delete_at i
-            children.insert i, *c.children
-          end
-        end
       end
     end
 
@@ -643,32 +636,19 @@ module List
 
     class Leaf < Node
 
-      attr_reader :string
+      attr_reader :c
 
-      def initialize(engine, special, string)
-        super(engine, special)
-        @string = string
+      def initialize(engine, c)
+        super(engine, nil)
+        @c = c
       end
 
       def atomic?
-        if string.length == 1
-          if s = special.special(string)
-            s.atomic?
-          else
-            true
-          end
-        end
+        true
       end
 
       def convert
-        elements = string.chars.map do |c|
-          if s = special.special(c)
-            s.convert
-          else
-            quote c
-          end
-        end
-        rx = condense elements
+        rx = quote c
         finalize rx
       end
     end
