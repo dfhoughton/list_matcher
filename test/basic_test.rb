@@ -139,4 +139,12 @@ class BasicTest < Minitest::Test
     assert good.all?{ |w| rx === w }
     assert bad.none?{ |w| rx === w }
   end
+
+  def test_string_bound
+    fail
+  end
+
+  def test_line_bound
+    fail
+  end
 end

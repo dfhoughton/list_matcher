@@ -11,7 +11,6 @@ module List
       self.new(**opts).pattern list
     end
 
-    W = Regexp.new '\w'
     # to make a replacement of Regexp.quote that ignores characters that only need quoting inside character classes
     QRX = Regexp.new "([" + ( (1..255).map(&:chr).select{ |c| Regexp.quote(c) != c } - %w(-) ).map{ |c| Regexp.quote c }.join + "])"
 
@@ -31,12 +30,20 @@ module List
       @special              = deep_dup special
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
-      if bound.is_a? Hash
-        @word_test   = bound[:test]  || W
+      if bound == :string
+        @word_test   = /./
+        @left_bound  = '\A'
+        @right_bound = '\z'
+      elsif bound == :line
+        @word_test   = /./
+        @left_bound  = '^'
+        @right_bound = '$'
+      elsif bound.is_a? Hash
+        @word_test   = bound[:test]  || /\w/
         @left_bound  = bound[:left]  || '\b'
         @right_bound = bound[:right] || '\b'
       elsif bound
-        @word_test   = W
+        @word_test   = /\w/
         @left_bound  = '\b'
         @right_bound = '\b'
       end
