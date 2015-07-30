@@ -283,13 +283,6 @@ module List
         @special_map ||= {}
       end
 
-      def no_specials?
-        if @no_specials.nil?
-          @no_specials = special_map.empty?
-        end
-        @no_specials
-      end
-
       def special(s)
         special_map[s]
       end
