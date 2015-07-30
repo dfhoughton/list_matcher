@@ -33,6 +33,10 @@ puts m.pattern %w( catttttttttt batttttttttt )   # (?>[bc]at{10})
 puts m.pattern %w( cad bad dad )                 # (?>[b-d]ad)
 puts m.pattern %w( cat catalog )                 # (?>cat(?>alog)?+)
 puts m.pattern (1..31).to_a                      # (?>[4-9]|1\d?+|2\d?+|3[01]?+)
+
+# alternatively, if you aren't making a lot of regexen
+
+puts List::Matcher.pattern %w( cat dog )         # (?>cat|dog)
 ```
 
 ## Contributing
