@@ -74,7 +74,6 @@ def variants(length, range)
   out = []
   range = range.to_a
   tumblers = Array.new length, 0
-  start = range[0]
   (range.size ** length).times do
     out << tumblers.map{ |t| range[t] }.join
     tumblers[0] += 1
@@ -104,6 +103,9 @@ puts "\nFIXED LENGTH, FULL RANGE\n"
     end
     bm.report('List::Matcher rx creation') do
       creation_iterations.times{ simple_rx good }
+    end
+    bm.report('set creation') do
+      creation_iterations.times{ Set[*good] }
     end
     rx = simple_rx good
     bm.report('simple rx good') do

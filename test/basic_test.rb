@@ -141,10 +141,20 @@ class BasicTest < Minitest::Test
   end
 
   def test_string_bound
-    fail
+    rx = List::Matcher.pattern ['cat'], bound: :string
+    assert_equal '(?>\Acat\z)', rx
+    rx = Regexp.new rx
+    assert rx === 'cat', 'matches whole string'
+    assert "cat\ndog" !~ rx, 'line breaks do not suffice'
+    assert ' cat ' !~ rx, 'word boundaries do not suffice'
   end
 
   def test_line_bound
-    fail
+    rx = List::Matcher.pattern ['cat'], bound: :line
+    assert_equal '(?>^cat$)', rx
+    rx = Regexp.new rx
+    assert rx === 'cat', 'matches whole string'
+    assert rx === "cat\ndog", 'line breaks suffice'
+    assert ' cat ' !~ rx, 'word boundaries do not suffice'
   end
 end
