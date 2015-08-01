@@ -155,4 +155,18 @@ class BasicTest < Minitest::Test
     assert rx === "cat\ndog", 'line breaks suffice'
     assert ' cat ' !~ rx, 'word boundaries do not suffice'
   end
+
+  def test_instance_alias
+    words = %w(cat dog)
+    rx1 = List::Matcher.new.pattern words
+    rx2 = List::Matcher.new.rx words
+    assert_equal rx1, rx2
+  end
+
+  def test_class_alias
+    words = %w(cat dog)
+    rx1 = List::Matcher.pattern words
+    rx2 = List::Matcher.rx words
+    assert_equal rx1, rx2
+  end
 end

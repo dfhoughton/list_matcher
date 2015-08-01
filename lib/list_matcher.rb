@@ -11,6 +11,11 @@ module List
       self.new(**opts).pattern list
     end
 
+    # alias for self.pattern
+    def self.rx(list, opts={})
+      pattern list, opts
+    end
+
     # to make a replacement of Regexp.quote that ignores characters that only need quoting inside character classes
     QRX = Regexp.new "([" + ( (1..255).map(&:chr).select{ |c| Regexp.quote(c) != c } - %w(-) ).map{ |c| Regexp.quote c }.join + "])"
 
@@ -82,6 +87,8 @@ module List
         rx
       end
     end
+
+    alias_method :rx, :pattern
 
     def pfx
       @pfx ||= backtracking ? '(?:' : '(?>'
