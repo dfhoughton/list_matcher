@@ -7,7 +7,6 @@ class BasicTest < Minitest::Test
   def test_simple
     words = %w(cat dog camel)
     rx = List::Matcher.pattern words
-    rx = Regexp.new rx
     words.each do |w|
       assert rx === w
     end
@@ -16,14 +15,14 @@ class BasicTest < Minitest::Test
   def test_word_chars
     word = (1..255).map(&:chr).select{ |c| /\w/ === c }
     chars = word + ['+']
-    rx = List::Matcher.pattern chars
+    rx = List::Matcher.pattern chars, compile: false
     assert_equal '[+\w]', rx
     rx = Regexp.new rx
     chars.each do |c|
       assert rx === c
     end
     chars = word + ['@']
-    rx = List::Matcher.pattern chars
+    rx = List::Matcher.pattern chars, compile: false
     assert_equal '[@\w]', rx
     rx = Regexp.new rx
     chars.each do |c|
@@ -34,7 +33,7 @@ class BasicTest < Minitest::Test
   def test_word_chars_case_insensitive
     word = (1..255).map(&:chr).select{ |c| /\w/ === c }
     chars = word + ['+']
-    rx = List::Matcher.pattern chars, case_insensitive: true
+    rx = List::Matcher.pattern chars, case_insensitive: true, compile: false, compile: false
     assert_equal '(?i:[+\w])', rx
     rx = Regexp.new rx
     chars.each do |c|
@@ -44,7 +43,7 @@ class BasicTest < Minitest::Test
 
   def test_num_chars
     words = (0..9).map(&:to_s)
-    rx = List::Matcher.pattern words
+    rx = List::Matcher.pattern words, compile: false, compile: false
     assert_equal '\d', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -54,7 +53,7 @@ class BasicTest < Minitest::Test
 
   def test_space_chars
     words = (1..255).map(&:chr).select{ |c| c =~ /\s/ }
-    rx = List::Matcher.pattern words
+    rx = List::Matcher.pattern words, compile: false, compile: false
     assert_equal '\s', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -64,7 +63,7 @@ class BasicTest < Minitest::Test
 
   def test_bounds
     words = %w(cat dog)
-    rx = List::Matcher.pattern words, bound: true
+    rx = List::Matcher.pattern words, bound: true, compile: false, compile: false
     assert_equal '(?>\b(?>cat|dog)\b)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -73,15 +72,15 @@ class BasicTest < Minitest::Test
   end
 
   def test_repeats
-    rx = List::Matcher.pattern %w(aaaaaaaaaa)
+    rx = List::Matcher.pattern %w(aaaaaaaaaa), compile: false, compile: false
     assert_equal '(?>a{10})', rx
-    rx = List::Matcher.pattern %w(bbbaaaaaaaaaabbbaaaaaaaaaa)
+    rx = List::Matcher.pattern %w(bbbaaaaaaaaaabbbaaaaaaaaaa), compile: false
     assert_equal '(?>(?>bbba{10}){2})', rx
   end
 
   def test_opt_suffix
     words = %w(the them)
-    rx = List::Matcher.pattern words
+    rx = List::Matcher.pattern words, compile: false, compile: false
     assert_equal '(?>them?+)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -91,7 +90,7 @@ class BasicTest < Minitest::Test
 
   def test_opt_prefix
     words = %w(at cat)
-    rx = List::Matcher.pattern words
+    rx = List::Matcher.pattern words, compile: false, compile: false
     assert_equal '(?>c?+at)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -101,7 +100,7 @@ class BasicTest < Minitest::Test
 
   def test_special_string
     words = ['cat dog']
-    rx = List::Matcher.pattern words, special: { ' ' => '\s++' }
+    rx = List::Matcher.pattern words, special: { ' ' => '\s++' }, compile: false
     assert_equal '(?>cat\s++dog)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -111,7 +110,7 @@ class BasicTest < Minitest::Test
 
   def test_special_rx
     words = %w(year year2000 year1999)
-    rx = List::Matcher.pattern words, special: { /(?<!\d)\d{4}(?!\d)/ => nil }
+    rx = List::Matcher.pattern words, special: { /(?<!\d)\d{4}(?!\d)/ => nil }, compile: false
     assert_equal '(?>year(?-mix:(?<!\d)\d{4}(?!\d))?+)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -123,7 +122,7 @@ class BasicTest < Minitest::Test
     words = ['   cat   dog  ']
     good = ['the cat  dog is an odd beast']
     bad = ['the catdog is an odd beast', 'the cat doggy is an odd beast', 'the scat dog is an odd beast']
-    rx = List::Matcher.pattern words, bound: true, normalize_whitespace: true
+    rx = List::Matcher.pattern words, bound: true, normalize_whitespace: true, compile: false
     assert_equal '(?>\bcat\s++dog\b)', rx
     rx = Regexp.new rx
     assert good.all?{ |w| rx === w }, 'not bothered by odd space'
@@ -133,7 +132,6 @@ class BasicTest < Minitest::Test
   def test_special_borders
     words = (1..31).to_a
     rx = List::Matcher.pattern words, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)' }
-    rx = Regexp.new rx
     good = words.map{ |n| "a#{n}b" }
     bad = words.map{ |n| "0#{n}0" }
     assert good.all?{ |w| rx === w }
@@ -141,7 +139,7 @@ class BasicTest < Minitest::Test
   end
 
   def test_string_bound
-    rx = List::Matcher.pattern ['cat'], bound: :string
+    rx = List::Matcher.pattern ['cat'], bound: :string, compile: false
     assert_equal '(?>\Acat\z)', rx
     rx = Regexp.new rx
     assert rx === 'cat', 'matches whole string'
@@ -150,7 +148,7 @@ class BasicTest < Minitest::Test
   end
 
   def test_line_bound
-    rx = List::Matcher.pattern ['cat'], bound: :line
+    rx = List::Matcher.pattern ['cat'], bound: :line, compile: false
     assert_equal '(?>^cat$)', rx
     rx = Regexp.new rx
     assert rx === 'cat', 'matches whole string'

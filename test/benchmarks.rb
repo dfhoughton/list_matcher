@@ -23,7 +23,6 @@ end
 
 def list_rx(words)
   rx = List::Matcher.pattern words, bound: :string
-  Regexp.new rx
 end
 
 magnitudes.times do

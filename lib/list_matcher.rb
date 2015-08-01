@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :compile
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -21,6 +21,7 @@ module List
           trim:                 false,
           case_insensitive:     false,
           normalize_whitespace: false,
+          compile:              true,
           special:              {}
         )
       @atomic               = atomic
@@ -30,6 +31,7 @@ module List
       @special              = deep_dup special
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
+      @compile              = compile
       if bound == :string
         @word_test   = /./
         @left_bound  = '\A'
@@ -67,10 +69,15 @@ module List
       root.root = true
       root.flatten
       rx = root.convert
-      if case_insensitive
+      rx = if case_insensitive
         "(?i:#{rx})"
       elsif atomic && !root.atomic?
         wrap rx
+      else
+        rx
+      end
+      if compile
+        Regexp.new rx
       else
         rx
       end
