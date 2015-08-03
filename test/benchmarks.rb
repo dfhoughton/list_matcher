@@ -22,7 +22,7 @@ def simple_rx(words)
 end
 
 def list_rx(words)
-  rx = List::Matcher.pattern words, bound: :string
+  List::Matcher.rx words, bound: :string
 end
 
 magnitudes.times do

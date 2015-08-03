@@ -19,7 +19,7 @@ class StressTest < Minitest::Test
     words = words n, range, max
     good = words[0...n/10]
     bad = words[n/10..-1]
-    rx = List::Matcher.pattern( good, bound: true )
+    rx = List::Matcher.rx( good, bound: true )
     puts good.inspect unless good.all?{ |w| rx === w }
     good.each do |w|
       assert rx === w, "#{w} is good for #{rx}"

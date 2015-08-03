@@ -11,9 +11,9 @@ module List
       self.new(**opts).pattern list
     end
 
-    # alias for self.pattern
+    # like self.pattern, but returns a regex rather than a string
     def self.rx(list, opts={})
-      pattern list, opts
+      self.new(**opts).rx list
     end
 
     # to make a replacement of Regexp.quote that ignores characters that only need quoting inside character classes
@@ -62,6 +62,7 @@ module List
       end
     end
 
+    # converst list into a string representing a regex pattern suitable for inclusion in a larger regex
     def pattern(list)
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:strip).select!{ |s| s.length > 0 } if trim
@@ -74,21 +75,19 @@ module List
       root.root = true
       root.flatten
       rx = root.convert
-      rx = if case_insensitive
+      if case_insensitive
         "(?i:#{rx})"
       elsif atomic && !root.atomic?
         wrap rx
       else
         rx
       end
-      if compile
-        Regexp.new rx
-      else
-        rx
-      end
     end
 
-    alias_method :rx, :pattern
+    # like pattern but it returns a regex instead of a string
+    def rx(list)
+      Regexp.new pattern(list)
+    end
 
     def pfx
       @pfx ||= backtracking ? '(?:' : '(?>'
