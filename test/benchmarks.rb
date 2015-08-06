@@ -1,6 +1,5 @@
 require 'list_matcher'
-require 'benchmark'
-# require 'bigdecimal/math'
+require 'benchmark/ips'
 
 size = 100
 magnitudes = 3
@@ -28,35 +27,39 @@ end
 magnitudes.times do
   good = words size, 97..122, 10..15
   bad  = words size, 97..122, 10..15, good
+  set = Set[*good]
+  rx  = simple_rx good
+  lrx = list_rx good
   puts "\nnumber of words: #{size}"
-  Benchmark.bmbm do |bm|
-    rx = simple_rx good
+  Benchmark.ips do |bm|
     bm.report('simple rx good') do
       good.each{ |w| rx === w }
     end
-    bm.report('simple rx bad') do
-      bad.each{ |w| rx === w }
+    bm.report('List::Matcher good') do
+      good.each{ |w| lrx === w }
     end
-    rx = list_rx good
-    bm.report('List::Matcher rx good') do
-      good.each{ |w| rx === w }
-    end
-    bm.report('List::Matcher rx bad') do
-      bad.each{ |w| rx === w }
-    end
-    set = Set[*good]
-    bm.report('set rx good') do
+    bm.report('set good') do
       good.each{ |w| set.include? w }
-    end
-    bm.report('set rx bad') do
-      bad.each{ |w| set.include? w }
     end
     bm.report('list good') do
       good.each{ |w| good.include? w }
     end
+    bm.compare!
+  end
+  Benchmark.ips do |bm|
+    bm.report('simple rx bad') do
+      bad.each{ |w| rx === w }
+    end
+    bm.report('List::Matcher bad') do
+      bad.each{ |w| lrx === w }
+    end
+    bm.report('set bad') do
+      bad.each{ |w| set.include? w }
+    end
     bm.report('list bad') do
       bad.each{ |w| good.include? w }
     end
+    bm.compare!
   end
   size *= 10
 end
@@ -95,43 +98,50 @@ puts "\nFIXED LENGTH, FULL RANGE\n"
   good = nums i
   bad  = alphas i
   lrx = list_rx good
+  set = Set[*good]
+  rx  = simple_rx good
   puts "\nnumber of words: #{10 ** i}; List::Matcher rx: #{lrx}"
-  Benchmark.bmbm do |bm|
+  Benchmark.ips do |bm|
     bm.report('simple rx creation') do
       creation_iterations.times{ simple_rx good }
     end
-    bm.report('List::Matcher rx creation') do
+    bm.report('List::Matcher creation') do
       creation_iterations.times{ simple_rx good }
     end
     bm.report('set creation') do
       creation_iterations.times{ Set[*good] }
     end
-    rx = simple_rx good
+    bm.compare!
+  end
+  Benchmark.ips do |bm|
     bm.report('simple rx good') do
       good.each{ |w| rx === w }
     end
-    bm.report('simple rx bad') do
-      bad.each{ |w| rx === w }
-    end
-    bm.report('List::Matcher rx good') do
+    bm.report('List::Matcher good') do
       good.each{ |w| lrx === w }
     end
-    bm.report('List::Matcher rx bad') do
-      bad.each{ |w| lrx === w }
-    end
-    set = Set[*good]
-    bm.report('set rx good') do
+    bm.report('set good') do
       good.each{ |w| set.include? w }
-    end
-    bm.report('set rx bad') do
-      bad.each{ |w| set.include? w }
     end
     bm.report('list good') do
       good.each{ |w| good.include? w }
     end
+    bm.compare!
+  end
+  Benchmark.ips do |bm|
+    bm.report('simple rx bad') do
+      bad.each{ |w| rx === w }
+    end
+    bm.report('List::Matcher bad') do
+      bad.each{ |w| lrx === w }
+    end
+    bm.report('set bad') do
+      bad.each{ |w| set.include? w }
+    end
     bm.report('list bad') do
       bad.each{ |w| good.include? w }
     end
+    bm.compare!
   end
   size *= 10
 end
