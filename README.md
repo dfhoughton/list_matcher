@@ -58,43 +58,36 @@ The `rx` and `pattern` methods take the same options. These are
 
 ### atomic 
 
-    default: `true`
-
+    default: true
 
 If true, the returned expression is wrapped in a non-capturing grouping expression, either `(?:...)` or `(?>...)`,
 so it can receive a quantification suffix.
 
 ### backtracking 
 
-    default: `true`
-
+    default: true
 
 If true, the default non-capturing grouping expression is `(?:...)` rather than `(?>...)`, and the optional quantifier is
 `?` rather than `?+`.
 
 ### bound 
 
-    default: `false`
-
+    default: false
 
 Whether boundary expressions should be attached to the margins of every expression in the list.
 
 ### trim 
 
-    default: `false`
-
+    default: false
 ### case_insensitive 
 
-    default: `false`
-
+    default: false
 ### normalize_whitespace 
 
-    default: `false`
-
+    default: false
 ### compile 
 
-    default: `true`
-
+    default: true
 ### special
 
 
