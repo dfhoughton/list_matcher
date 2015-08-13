@@ -61,7 +61,9 @@ The `rx` and `pattern` methods take the same options. These are
 
 ### atomic 
 
-    default: true
+```ruby
+default: true
+```
 
 If true, the returned expression is wrapped in a non-capturing grouping expression, either `(?:...)` or `(?>...)`,
 so it can receive a quantification suffix.
@@ -73,28 +75,38 @@ List::Matcher.pattern %w(cat dog), atomic: true    # "(?:cat|dog)"
 
 ### backtracking 
 
-    default: true
+```ruby
+default: true
+```
 
 If true, the default non-capturing grouping expression is `(?:...)` rather than `(?>...)`, and the optional quantifier is
 `?` rather than `?+`.
 
 ### bound 
 
-    default: false
+```ruby
+default: false
+```
 
 Whether boundary expressions should be attached to the margins of every expression in the list.
 
 ### trim 
 
-    default: false
+```ruby
+default: false
+```
 
 ### case_insensitive 
 
-    default: false
+```ruby
+default: false
+```
 
 ### normalize_whitespace 
 
-    default: false
+```ruby
+default: false
+```
 
 ### special
 
