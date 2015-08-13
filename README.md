@@ -23,7 +23,7 @@ Or install it yourself as:
 ```ruby
 require 'list_matcher'
 
-m = List::Matcher.new compile: false
+m = List::Matcher.new
 puts m.pattern %w( cat dog )                               # (?>cat|dog)
 puts m.pattern %w( cat rat )                               # (?>[cr]at)
 puts m.pattern %w( cat camel )                             # (?>ca(?>mel|t))
@@ -50,7 +50,9 @@ class methods.
 
 ## Description
 
-List::Matcher facilitates generating efficient regexen programmatically.
+`List::Matcher` facilitates generating efficient regexen programmatically. This is useful, for example, when looking for
+occurrences of particular words or phrases in freeform text. `List::Matcher` will automatically generate regular expressions
+that minimize backtracking -- the revisiting of earlier decisions.
 
 ## Options
 
