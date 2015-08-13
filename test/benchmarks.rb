@@ -24,6 +24,8 @@ def list_rx(words)
   List::Matcher.rx words, bound: :string
 end
 
+puts "RANDOM WORDS, VARIABLE LENGTH\n"
+
 magnitudes.times do
   good = words size, 97..122, 10..15
   bad  = words size, 97..122, 10..15, good

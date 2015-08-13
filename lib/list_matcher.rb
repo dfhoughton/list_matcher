@@ -21,7 +21,7 @@ module List
 
     def initialize(
           atomic:               true,
-          backtracking:         false,
+          backtracking:         true,
           bound:                false,
           trim:                 false,
           case_insensitive:     false,
