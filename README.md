@@ -39,9 +39,43 @@ puts m.pattern (1..31).to_a                                # (?>[4-9]|1\d?+|2\d?
 puts List::Matcher.pattern %w( cat dog ), compile: false   # (?>cat|dog)
 ```
 
+There are two methods that one should use with either `List::Matcher` or a `List::Matcher` object: `rx` and `pattern`. These
+are identical except that `rx` produces a `Regexp` object and `pattern` produces the string from which one can compose the
+return value of `rx`. The `pattern` method is more useful if one is interested in composing a larger regular expression out of
+smaller pieces.
+
+If one wants to construct multiple regexen with the same set of options, one would do well to construct a `List::Matcher` instance
+with the options in question and then call its `rx` or `pattern` methods with simple lists. Otherwise, one might as well call the
+class methods.
+
 ## Description
 
 List::Matcher facilitates generating efficient regexen programmatically.
+
+## Options
+
+The `rx` and `pattern` methods take the same options. These are
+
+### atomic (default: `true`)
+
+If true, the returned expression is wrapped in a non-capturing grouping expression, either `(?:...)` or `(?>...)`,
+so it can receive a quantification suffix.
+
+### backtracking (default: `true`)
+
+If true, the default non-capturing grouping expression is `(?:...)` rather than `(?>...)`, and the optional quantifier is
+`?` rather than `?+`.
+
+### bound (default: `false`)
+
+Whether boundary expressions should be attached to the margins of every expression in the list.
+
+### trim (default: `false`)
+### case_insensitive (default: `false`)
+### normalize_whitespace (default: `false`)
+### compile (default: `true`)
+### special
+
 
 ## Benchmarks
 
