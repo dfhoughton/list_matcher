@@ -82,15 +82,15 @@ Whether boundary expressions should be attached to the margins of every expressi
 ### trim 
 
     default: false
+
 ### case_insensitive 
 
     default: false
+
 ### normalize_whitespace 
 
     default: false
-### compile 
 
-    default: true
 ### special
 
 

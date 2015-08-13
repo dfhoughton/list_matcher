@@ -26,7 +26,6 @@ module List
           trim:                 false,
           case_insensitive:     false,
           normalize_whitespace: false,
-          compile:              true,
           special:              {}
         )
       @atomic               = atomic
@@ -36,7 +35,6 @@ module List
       @special              = deep_dup special
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
-      @compile              = compile
       if bound == :string
         @word_test   = /./
         @left_bound  = '\A'
@@ -638,7 +636,8 @@ module List
 
       def convert
         rx = children.map(&:convert).join('|')
-        finalize wrap(rx)
+        rx = wrap(rx) unless root?
+        finalize rx
       end
 
       def atomic?
