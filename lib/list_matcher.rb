@@ -33,6 +33,7 @@ module List
       @trim                 = trim || normalize_whitespace
       @case_insensitive     = case_insensitive
       @special              = deep_dup special
+      @_bound               = bound
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
       if bound == :string
@@ -47,10 +48,12 @@ module List
         @word_test   = bound[:test]  || /\w/
         @left_bound  = bound[:left]  || '\b'
         @right_bound = bound[:right] || '\b'
-      elsif bound
+      elsif bound === true || bound == :word
         @word_test   = /\w/
         @left_bound  = '\b'
         @right_bound = '\b'
+      elsif !( bound === false )
+        raise "unfamiliar value for :bound option: #{bound.inspect}"
       end
       if normalize_whitespace
         @special[' '] = { pattern: '\s++' }
@@ -61,7 +64,19 @@ module List
     end
 
     # converst list into a string representing a regex pattern suitable for inclusion in a larger regex
-    def pattern(list)
+    def pattern( list, opts={} )
+      unless opts.empty?
+        opts = {
+          atomic:               @atomic,
+          backtracking:         @backtracking,
+          bound:                @_bound,
+          trim:                 @trim,
+          case_insensitive:     @case_insensitive,
+          normalize_whitespace: @normalize_whitespace,
+          special:              @special
+        }.merge opts
+        return self.class.new(**opts).pattern list
+      end
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:strip).select!{ |s| s.length > 0 } if trim
       list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
@@ -83,8 +98,8 @@ module List
     end
 
     # like pattern but it returns a regex instead of a string
-    def rx(list)
-      Regexp.new pattern(list)
+    def rx(list, opts={})
+      Regexp.new pattern(list, opts)
     end
 
     def pfx
@@ -641,7 +656,7 @@ module List
       end
 
       def atomic?
-        true
+        !root?
       end
 
     end

@@ -82,7 +82,7 @@ class BasicTest < Minitest::Test
   def test_opt_suffix
     words = %w(the them)
     rx = List::Matcher.pattern words
-    assert_equal '(?:them?+)', rx
+    assert_equal '(?:them?)', rx
     rx = Regexp.new rx
     words.each do |w|
       assert rx === w
@@ -92,7 +92,7 @@ class BasicTest < Minitest::Test
   def test_opt_prefix
     words = %w(at cat)
     rx = List::Matcher.pattern words
-    assert_equal '(?:c?+at)', rx
+    assert_equal '(?:c?at)', rx
     rx = Regexp.new rx
     words.each do |w|
       assert rx === w
@@ -112,7 +112,7 @@ class BasicTest < Minitest::Test
   def test_special_rx
     words = %w(year year2000 year1999)
     rx = List::Matcher.pattern words, special: { /(?<!\d)\d{4}(?!\d)/ => nil }
-    assert_equal '(?:year(?-mix:(?<!\d)\d{4}(?!\d))?+)', rx
+    assert_equal '(?:year(?-mix:(?<!\d)\d{4}(?!\d))?)', rx
     rx = Regexp.new rx
     words.each do |w|
       assert rx === w
@@ -156,5 +156,65 @@ class BasicTest < Minitest::Test
     assert rx === 'cat', 'matches whole string'
     assert rx === "cat\ndog", 'line breaks suffice'
     assert ' cat ' !~ rx, 'word boundaries do not suffice'
+  end
+
+  def test_dup_atomic
+    m = List::Matcher.new atomic: true
+    rx = m.pattern %w( cat dog ), atomic: false
+    assert_equal "cat|dog", rx
+  end
+
+  def test_dup_backtracking
+    m = List::Matcher.new backtracking: true
+    rx = m.pattern %w( cat dog ), backtracking: false
+    assert_equal "(?>cat|dog)", rx
+  end
+
+  def test_dup_bound
+    m = List::Matcher.new bound: false, atomic: false
+    rx = m.pattern %w( cat dog ), bound: true
+    assert_equal '\b(?:cat|dog)\b', rx
+  end
+
+  def test_dup_bound_string
+    m = List::Matcher.new bound: false, atomic: false
+    rx = m.pattern %w( cat dog ), bound: :string
+    assert_equal '\A(?:cat|dog)\z', rx
+  end
+
+  def test_dup_bound_line
+    m = List::Matcher.new bound: false, atomic: false
+    rx = m.pattern %w( cat dog ), bound: :line
+    assert_equal '^(?:cat|dog)$', rx
+  end
+
+  def test_dup_bound_fancy
+    m = List::Matcher.new bound: false, atomic: false
+    rx = m.pattern %w( 1 2 ), bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)' }
+    assert_equal '(?<!\d)[12](?!\d)', rx
+  end
+
+  def test_dup_trim
+    m = List::Matcher.new atomic: false
+    rx = m.pattern [%( cat )], trim: true
+    assert_equal 'cat', rx
+  end
+
+  def test_dup_case_insensitive
+    m = List::Matcher.new
+    rx = m.pattern %w(cat), case_insensitive: true
+    assert_equal '(?i:cat)', rx
+  end
+
+  def test_dup_normalize_whitespace
+    m = List::Matcher.new atomic: false
+    rx = m.pattern ['  cat     dog  '], normalize_whitespace: true
+    assert_equal 'cat\s++dog', rx
+  end
+
+  def test_dup_special
+    m = List::Matcher.new atomic: false
+    rx = m.pattern ['cat dog'], special: { ' ' => '\s++' }
+    assert_equal 'cat\s++dog', rx
   end
 end
