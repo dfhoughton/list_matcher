@@ -34,10 +34,6 @@ puts m.pattern %w( catttttttttt batttttttttt )             # (?:[bc]at{10})
 puts m.pattern %w( cad bad dad )                           # (?:[b-d]ad)
 puts m.pattern %w( cat catalog )                           # (?:cat(?:alog)?+)
 puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?+|2\d?+|3[01]?+)
-
-# alternatively, if you aren't making a lot of regexen
-
-puts List::Matcher.pattern %w( cat dog ), compile: false   # (?:cat|dog)
 ```
 
 There are two methods that one should use with either `List::Matcher` or a `List::Matcher` object: `rx` and `pattern`. These
@@ -118,6 +114,62 @@ default: false
 
 ### name
 
+If you assign your pattern a name, it will be constructed with a named group such that you can extract
+the substring matched. This is mostly useful if you are using `List::Matcher` to compose complex regexen
+incrementally. E.g., from the examples directory,
+
+```ruby
+require 'list_matcher'
+
+m = List::Matcher.new atomic: false, bound: true
+
+year      = m.pattern( (1901..2000).to_a, name: :year )
+mday      = m.pattern( (1..31).to_a, name: :mday )
+weekdays  = %w( Monday Tuesday Wednesday Thursday Friday Saturday Sunday )
+weekdays += weekdays.map{ |w| w[0...3] }
+wday      = m.pattern weekdays, case_insensitive: true, name: :wday
+months    = %w( January February March April May June July August September October November December )
+months   += months.map{ |w| w[0...3] }
+mo        = m.pattern months, case_insensitive: true, name: :mo
+
+date_20th_century = m.rx(
+  [
+    'wday, mo mday',
+    'wday, mo mday year',
+    'mo mday, year',
+    'mo year',
+    'mday mo year',
+    'wday',
+    'year',
+    'mday mo',
+    'mo mday',
+    'mo mday year'
+  ],
+  normalize_whitespace: true,
+  atomic: true,
+  symbols: {
+    year: year,
+    mday: mday,
+    wday: wday,
+    mo:   mo
+  }
+)
+
+[
+  'Friday',
+  'August 27',
+  'May 6, 1969',
+  '1 Jan 2000',
+  'this is not actually a date'
+].each do |candidate|
+  if m = date_20th_century.match(candidate)
+    puts "candidate: #{candidate}; year: #{m[:year]}; month: #{m[:mo]}; weekday: #{m[:wday]}; day of the month: #{m[:mday]}"
+  else
+    puts "#{candidate} does not look like a plausible date in the 20th century"
+  end
+end
+```
+
 ### vet
 
 ```ruby
@@ -125,7 +177,14 @@ default: false
 ```
 
 If true, all patterns associated with symbols will be tested upon initialization to make sure they will
-create legitimate regular expressions.
+create legitimate regular expressions. If you are prone to doing this, for example:
+
+```ruby
+List::Matcher.new symbols: { aw_nuts: '+++' }
+```
+
+then you may want to vet your symbols. Vetting is not done by default because one assumes you've worked out
+your substitutions on your own time and we need not waste runtime checking them.
 
 ## Benchmarks
 
