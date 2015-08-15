@@ -65,8 +65,8 @@ The `rx` and `pattern` methods take the same options. These are
 default: true
 ```
 
-If true, the returned expression is wrapped in a non-capturing grouping expression, either `(?:...)` or `(?>...)`,
-so it can receive a quantification suffix.
+If true, the returned expression is always wrapped in some grouping expression -- `(?:...)`, `(?>...)`, `(?i:...)`, etc.; whatever
+is appropriate given the other options and defaults -- so it can receive a quantification suffix.
 
 ```ruby
 List::Matcher.pattern %w(cat dog), atomic: false   # "cat|dog"
