@@ -76,7 +76,7 @@ m2 = m.bud case_insensitive: false
 ```
 
 Basically, you can mix in options in whatever way suits you. Constructing configured instances gives you a tiny bit of efficiency, but
-mostly it saves you're specifying these options in multiple places.
+mostly it saves your specifying these options in multiple places.
 
 ## Options
 
