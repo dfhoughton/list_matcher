@@ -2,7 +2,7 @@ require "minitest/autorun"
 
 require "list_matcher"
 
-class StressTest < Minitest::Test
+class Stress < Minitest::Test
   def test_simple
     (1..10).each{ basic_test 5000, 97..122, 4..8 }
   end
