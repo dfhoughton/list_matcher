@@ -116,8 +116,10 @@ each items marginal characters, the first and the last, are tested to see whethe
 boundary symbol, `\b`, is appended to them where appropriate. There are several variants on this, however:
 
 ```ruby
-bound: :word   # same as bound: true
+bound: :word
 ```
+
+This is the same as `bound: true`.
 
 ```ruby
 bound: :line
