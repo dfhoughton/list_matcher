@@ -76,23 +76,26 @@ module List
       end
     end
 
+    # returns a new pattern matcher differing from the original only in the options specified
+    def bud(opts={})
+      opts = {
+        atomic:               @atomic,
+        backtracking:         @backtracking,
+        bound:                @_bound,
+        trim:                 @trim,
+        case_insensitive:     @case_insensitive,
+        multiline:            @multiline,
+        normalize_whitespace: @normalize_whitespace,
+        symbols:              @symbols,
+        name:                 @name,
+        vet:                  @vet && opts[:symbols]
+      }.merge opts
+      self.class.new(**opts)
+    end
+
     # converst list into a string representing a regex pattern suitable for inclusion in a larger regex
     def pattern( list, opts={} )
-      unless opts.empty?
-        opts = {
-          atomic:               @atomic,
-          backtracking:         @backtracking,
-          bound:                @_bound,
-          trim:                 @trim,
-          case_insensitive:     @case_insensitive,
-          multiline:            @multiline,
-          normalize_whitespace: @normalize_whitespace,
-          symbols:              @symbols,
-          name:                 @name,
-          vet:                  @vet && opts[:symbols]
-        }.merge opts
-        return self.class.new(**opts).pattern list
-      end
+      return bud(opts).pattern list unless opts.empty?
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:strip).select!{ |s| s.length > 0 } if trim
       list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
