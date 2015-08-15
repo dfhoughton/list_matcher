@@ -234,4 +234,15 @@ class BasicTest < Minitest::Test
     rx = m.pattern %w( cat dog )
     assert_equal '(?<foo>cat|dog)', rx
   end
+
+  def test_vetting_good
+    List::Matcher.pattern %w(cat), symbols: { foo: 'bar' }, vet: true
+    assert true, 'good regexen are vetted appropriately'
+  end
+
+  def test_vetting_bad
+    assert_raises SyntaxError do
+      List::Matcher.pattern %w(cat), symbols: { foo: '+' }, vet: true
+    end
+  end
 end

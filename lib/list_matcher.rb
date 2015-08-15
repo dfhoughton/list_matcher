@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -28,7 +28,8 @@ module List
           multiline:            false,
           normalize_whitespace: false,
           symbols:              {},
-          name:                 false
+          name:                 false,
+          vet:                  false
         )
       @atomic               = atomic
       @backtracking         = backtracking
@@ -39,6 +40,7 @@ module List
       @_bound               = bound
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
+      @vet                  = vet
       if name
         raise "" unless name.is_a?(String) || name.is_a?(Symbol)
         if Regexp.new "(?<#{name}>.*)"
@@ -70,6 +72,9 @@ module List
       symbols.keys.each do |k|
         raise "symbols variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
       end
+      if vet
+        Special.new( self, @symbols, [] ).verify
+      end
     end
 
     # converst list into a string representing a regex pattern suitable for inclusion in a larger regex
@@ -84,7 +89,8 @@ module List
           multiline:            @multiline,
           normalize_whitespace: @normalize_whitespace,
           symbols:              @symbols,
-          name:                 @name
+          name:                 @name,
+          vet:                  @vet && opts[:symbols]
         }.merge opts
         return self.class.new(**opts).pattern list
       end
@@ -331,6 +337,17 @@ module List
         end
       end
 
+      # confirm that all special patterns are legitimate regexen
+      def verify
+        specials.each do |s|
+          begin
+            Regexp.new s.pat
+          rescue
+            raise SyntaxError.new "the symbol #{s.var} has an ill-formed pattern: #{s.pat}"
+          end
+        end
+      end
+
       def special_map
         @special_map ||= {}
       end
@@ -451,7 +468,7 @@ module List
     end
 
     class SpecialPattern < Node
-      attr_accessor :char, :var, :left, :right
+      attr_accessor :char, :var, :left, :right, :pat
       def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), word_left: false, word_right: false)
         super(engine, nil)
         @char = char

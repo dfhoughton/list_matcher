@@ -118,6 +118,14 @@ default: false
 
 ### name
 
+### vet
+
+```ruby
+default: false
+```
+
+If true, all patterns associated with symbols will be tested upon initialization to make sure they will
+create legitimate regular expressions.
 
 ## Benchmarks
 
