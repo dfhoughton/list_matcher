@@ -222,4 +222,10 @@ class BasicTest < Minitest::Test
     rx = List::Matcher.pattern %w( cat dog ), multiline: true
     assert_equal '(?m:cat|dog)', rx
   end
+
+  def test_dup_multiline
+    m = List::Matcher.new atomic: false
+    rx = m.pattern %w( cat dog ), multiline: true
+    assert_equal '(?m:cat|dog)', rx
+  end
 end
