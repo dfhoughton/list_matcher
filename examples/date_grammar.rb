@@ -17,6 +17,7 @@ date_20th_century = m.rx(
     'wday, mo mday year',
     'mo mday, year',
     'mo year',
+    'mday mo year',
     'wday',
     'year',
     'mday mo',
@@ -37,7 +38,7 @@ date_20th_century = m.rx(
   'Friday',
   'August 27',
   'May 6, 1969',
-  'Jan 1 2000',
+  '1 Jan 2000',
   'this is not actually a date'
 ].each do |candidate|
   if m = date_20th_century.match(candidate)
