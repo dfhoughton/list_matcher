@@ -68,7 +68,7 @@ module List
         @special[' '] = { pattern: '\s++' }
       end
       special.keys.each do |k|
-        raise "special variable #{k} is neither a string not a regex" unless k.is_a?(String) || k.is_a?(Regexp)
+        raise "special variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
       end
     end
 
@@ -116,12 +116,10 @@ module List
     end
 
     def modifiers
-      ( @modifiers ||= begin
-        if case_insensitive || multiline
-          [ ( 'i' if case_insensitive ), ( 'm' if multiline ) ].compact.join
-        else
-          [nil]
-        end
+      ( @modifiers ||= if case_insensitive || multiline
+        [ ( 'i' if case_insensitive ), ( 'm' if multiline ) ].compact.join
+      else
+        [nil]
       end )[0]
     end
 
@@ -209,7 +207,7 @@ module List
         Hash[o.map{ |k, v| [ deep_dup(k), deep_dup(v) ] }]
       elsif o.is_a?(Array)
         o.map{ |v| deep_dup v }
-      elsif o.nil?
+      elsif o.nil? || o.is_a?(Symbol)
         o
       else
         o.dup
@@ -294,10 +292,10 @@ module List
           specials.sort do |a, b|
             a = a.first
             b = b.first
-            s1 = a.is_a? String
-            s2 = b.is_a? String
+            s1 = a.is_a?(String) || a.is_a?(Symbol)
+            s2 = b.is_a?(String) || b.is_a?(Symbol)
             if s1 && s2
-              b <=> a
+              b.to_s <=> a.to_s
             elsif s1
               -1
             elsif s2
@@ -457,7 +455,7 @@ module List
       def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), word_left: false, word_right: false)
         super(engine, nil)
         @char = char
-        @var = var.is_a?(String) ? Regexp.new(Regexp.quote(var)) : var
+        @var = var.is_a?(String) || var.is_a?(Symbol) ? Regexp.new(Regexp.quote(var.to_s)) : var
         @pat = pat || var.to_s
         @atomic = !!atomic
         @left = !!word_left
