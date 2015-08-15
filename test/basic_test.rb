@@ -217,4 +217,9 @@ class BasicTest < Minitest::Test
     rx = m.pattern ['cat dog'], special: { ' ' => '\s++' }
     assert_equal 'cat\s++dog', rx
   end
+
+  def test_multiline
+    rx = List::Matcher.pattern %w( cat dog ), multiline: true
+    assert_equal '(?m:cat|dog)', rx
+  end
 end

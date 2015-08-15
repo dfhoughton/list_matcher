@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :compile
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -25,6 +25,7 @@ module List
           bound:                false,
           trim:                 false,
           case_insensitive:     false,
+          multiline:            false,
           normalize_whitespace: false,
           special:              {}
         )
@@ -32,6 +33,7 @@ module List
       @backtracking         = backtracking
       @trim                 = trim || normalize_whitespace
       @case_insensitive     = case_insensitive
+      @multiline            = multiline
       @special              = deep_dup special
       @_bound               = bound
       @bound                = !!bound
@@ -72,6 +74,7 @@ module List
           bound:                @_bound,
           trim:                 @trim,
           case_insensitive:     @case_insensitive,
+          multiline:            @multiline,
           normalize_whitespace: @normalize_whitespace,
           special:              @special
         }.merge opts
@@ -88,13 +91,25 @@ module List
       root.root = true
       root.flatten
       rx = root.convert
-      if case_insensitive
-        "(?i:#{rx})"
-      elsif atomic && !root.atomic?
+      if m = modifiers
+        rx = "(?#{m}:#{rx})"
+        return rx if backtracking
+      end
+      if atomic && !root.atomic?
         wrap rx
       else
         rx
       end
+    end
+
+    def modifiers
+      ( @modifiers ||= begin
+        if case_insensitive || multiline
+          [ ( 'i' if case_insensitive ), ( 'm' if multiline ) ].compact.join
+        else
+          [nil]
+        end
+      end )[0]
     end
 
     # like pattern but it returns a regex instead of a string

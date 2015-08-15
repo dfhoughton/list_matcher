@@ -102,6 +102,12 @@ default: false
 default: false
 ```
 
+### multiline 
+
+```ruby
+default: false
+```
+
 ### normalize_whitespace 
 
 ```ruby
