@@ -36,20 +36,47 @@ puts m.pattern %w( cat catalog )                           # (?:cat(?:alog)?+)
 puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?+|2\d?+|3[01]?+)
 ```
 
-There are two methods that one should use with either `List::Matcher` or a `List::Matcher` object: `rx` and `pattern`. These
-are identical except that `rx` produces a `Regexp` object and `pattern` produces the string from which one can compose the
-return value of `rx`. The `pattern` method is more useful if one is interested in composing a larger regular expression out of
-smaller pieces.
-
-If one wants to construct multiple regexen with the same set of options, one would do well to construct a `List::Matcher` instance
-with the options in question and then call its `rx` or `pattern` methods with simple lists. Otherwise, one might as well call the
-class methods.
-
 ## Description
 
 `List::Matcher` facilitates generating efficient regexen programmatically. This is useful, for example, when looking for
-occurrences of particular words or phrases in freeform text. `List::Matcher` will automatically generate regular expressions
-that minimize backtracking -- the revisiting of earlier decisions.
+occurrences of particular words or phrases in free-form text. `List::Matcher` will automatically generate regular expressions
+that minimize backtracking, so they tend to be as fast as one could hope a regular expression would be. (The general strategy is
+to represent the items in the list as a trie.)
+
+`List::Matcher` has many options and the initialization of a matcher for pattern generation is somewhat complex, so various methods
+are provided to minimize initializations and the number of times you specify options. For one-off patterns, you may as well call
+class methods, either `pattern` which generates a string, or `rx`, which returns a `Regexp` object:
+
+```ruby
+List::Matcher.pattern %( cat dog )   # "(?:cat|dog)"
+List::Matcher.rx      %( cat dog )   # /(?:cat|dog)/
+```
+
+If you plan to generate multiple regexen, or have complicated options which you always use, you may as well generate a configured
+instance first:
+
+```ruby
+m = List::Matcher.new normalize_whitespace: true, bound: true, case_insensitive: true, multiline: true, atomic: false, symbols: { num: '\d++' }
+m.pattern method_that_gets_a_long_list
+m.rx      method_that_gets_a_long_list
+...
+```
+
+If you have a basic set of options and you need to modify these in particular cases, you can:
+
+```ruby
+m.pattern list, case_insensitive: false
+```
+
+You can also generate a prototype list matcher with a particular variation and bud off children with their own properties:
+
+```ruby
+m  = List::Matcher.new normalize_whitespace: true, bound: true, case_insensitive: true, multiline: true, atomic: false, symbols: { num: '\d++' }
+m2 = m.bud case_insensitive: false
+```
+
+Basically, you can mix in options in whatever way suits you. Constructing configured instances gives you a tiny bit of efficiency, but
+mostly it saves you're specifying these options in multiple places.
 
 ## Options
 
