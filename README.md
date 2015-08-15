@@ -148,6 +148,8 @@ Note that if you use ad hoc boundaries there are defaults. The default test is `
 default: false
 ```
 
+Strip whitespace off the margins of items in the list.
+
 ### case_insensitive 
 
 ```ruby
