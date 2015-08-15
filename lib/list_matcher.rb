@@ -42,7 +42,7 @@ module List
       @vet                  = vet
       if name
         raise "" unless name.is_a?(String) || name.is_a?(Symbol)
-        if Regexp.new "(?<#{name}>.*)"
+        if Regexp.new "(?<#{name}>.*)"   # stir up any errors that might arise from using this name in a named capture
           @name = name
         end
       end
