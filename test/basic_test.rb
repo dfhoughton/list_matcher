@@ -228,4 +228,10 @@ class BasicTest < Minitest::Test
     rx = m.pattern %w( cat dog ), multiline: true
     assert_equal '(?m:cat|dog)', rx
   end
+
+  def test_name
+    m = List::Matcher.new name: :foo
+    rx = m.pattern %w( cat dog )
+    assert_equal '(?<foo>cat|dog)', rx
+  end
 end

@@ -3,7 +3,7 @@ require 'set'
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -27,7 +27,8 @@ module List
           case_insensitive:     false,
           multiline:            false,
           normalize_whitespace: false,
-          special:              {}
+          special:              {},
+          name:                 false
         )
       @atomic               = atomic
       @backtracking         = backtracking
@@ -38,6 +39,12 @@ module List
       @_bound               = bound
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
+      if name
+        raise "" unless name.is_a?(String) || name.is_a?(Symbol)
+        if Regexp.new "(?<#{name}>.*)"
+          @name = name
+        end
+      end
       if bound == :string
         @word_test   = /./
         @left_bound  = '\A'
@@ -76,7 +83,8 @@ module List
           case_insensitive:     @case_insensitive,
           multiline:            @multiline,
           normalize_whitespace: @normalize_whitespace,
-          special:              @special
+          special:              @special,
+          name:                 @name
         }.merge opts
         return self.class.new(**opts).pattern list
       end
@@ -93,8 +101,13 @@ module List
       rx = root.convert
       if m = modifiers
         rx = "(?#{m}:#{rx})"
-        return rx if backtracking
+        grouped = true
       end
+      if name
+        rx = "(?<#{name}>#{rx})"
+        grouped = true
+      end
+      return rx if grouped && backtracking
       if atomic && !root.atomic?
         wrap rx
       else
