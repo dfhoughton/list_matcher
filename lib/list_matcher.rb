@@ -1,5 +1,4 @@
 require "list_matcher/version"
-require 'set'
 
 module List
   class Matcher
