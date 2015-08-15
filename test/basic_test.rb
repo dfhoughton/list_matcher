@@ -99,9 +99,9 @@ class BasicTest < Minitest::Test
     end
   end
 
-  def test_special_string
+  def test_symbols_string
     words = ['cat dog']
-    rx = List::Matcher.pattern words, special: { ' ' => '\s++' }
+    rx = List::Matcher.pattern words, symbols: { ' ' => '\s++' }
     assert_equal '(?:cat\s++dog)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -109,9 +109,9 @@ class BasicTest < Minitest::Test
     end
   end
 
-  def test_special_rx
+  def test_symbols_rx
     words = %w(year year2000 year1999)
-    rx = List::Matcher.pattern words, special: { /(?<!\d)\d{4}(?!\d)/ => nil }
+    rx = List::Matcher.pattern words, symbols: { /(?<!\d)\d{4}(?!\d)/ => nil }
     assert_equal '(?:year(?-mix:(?<!\d)\d{4}(?!\d))?)', rx
     rx = Regexp.new rx
     words.each do |w|
@@ -130,7 +130,7 @@ class BasicTest < Minitest::Test
     assert bad.none?{ |w| rx === w }, 'needs interior space and boundaries'
   end
 
-  def test_special_borders
+  def test_symbols_borders
     words = (1..31).to_a
     rx = List::Matcher.pattern words, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)' }
     rx = Regexp.new rx
@@ -212,9 +212,9 @@ class BasicTest < Minitest::Test
     assert_equal 'cat\s++dog', rx
   end
 
-  def test_dup_special
+  def test_dup_symbols
     m = List::Matcher.new atomic: false
-    rx = m.pattern ['cat dog'], special: { ' ' => '\s++' }
+    rx = m.pattern ['cat dog'], symbols: { ' ' => '\s++' }
     assert_equal 'cat\s++dog', rx
   end
 

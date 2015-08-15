@@ -114,7 +114,7 @@ default: false
 default: false
 ```
 
-### special
+### symbols
 
 ### name
 

@@ -27,7 +27,7 @@ module List
           case_insensitive:     false,
           multiline:            false,
           normalize_whitespace: false,
-          special:              {},
+          symbols:              {},
           name:                 false
         )
       @atomic               = atomic
@@ -35,7 +35,7 @@ module List
       @trim                 = trim || normalize_whitespace
       @case_insensitive     = case_insensitive
       @multiline            = multiline
-      @special              = deep_dup special
+      @symbols              = deep_dup symbols
       @_bound               = bound
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
@@ -65,10 +65,10 @@ module List
         raise "unfamiliar value for :bound option: #{bound.inspect}"
       end
       if normalize_whitespace
-        @special[' '] = { pattern: '\s++' }
+        @symbols[' '] = { pattern: '\s++' }
       end
-      special.keys.each do |k|
-        raise "special variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
+      symbols.keys.each do |k|
+        raise "symbols variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
       end
     end
 
@@ -83,7 +83,7 @@ module List
           case_insensitive:     @case_insensitive,
           multiline:            @multiline,
           normalize_whitespace: @normalize_whitespace,
-          special:              @special,
+          symbols:              @symbols,
           name:                 @name
         }.merge opts
         return self.class.new(**opts).pattern list
@@ -92,7 +92,7 @@ module List
       list.map!(&:strip).select!{ |s| s.length > 0 } if trim
       list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
       return nil if list.empty?
-      specializer = Special.new self, @special, list
+      specializer = Special.new self, @symbols, list
       list = specializer.normalize
 
       root = tree list, specializer
@@ -144,10 +144,10 @@ module List
       @wrap_size ||= pfx.length + 1
     end
 
-    def tree(list, special)
+    def tree(list, symbols)
       if list.size == 1
         leaves = list[0].chars.map do |c|
-          special.special(c) || Leaf.new( self, c )
+          symbols.symbols(c) || Leaf.new( self, c )
         end
         if leaves.length == 1
           leaves.first
@@ -155,38 +155,38 @@ module List
           Sequence.new self, *leaves
         end
       elsif list.all?{ |w| w.length == 1 }
-        chars = list.select{ |w| !special.special(w) }
+        chars = list.select{ |w| !symbols.symbols(w) }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
         end
-        a = Alternate.new self, special, list unless list.empty?
+        a = Alternate.new self, symbols, list unless list.empty?
         a.children.unshift c if a && c
         a || c
       elsif c = best_prefix(list)   # found a fixed-width prefix pattern
         if optional = c[1].include?('')
           c[1].reject!{ |w| w == '' }
         end
-        c1 = tree c[0], special
-        c2 = tree c[1], special
+        c1 = tree c[0], symbols
+        c2 = tree c[1], symbols
         c2.optional = optional
         Sequence.new self, c1, c2
       elsif c = best_suffix(list)   # found a fixed-width suffix pattern
         if optional = c[0].include?('')
           c[0].reject!{ |w| w == '' }
         end
-        c1 = tree c[0], special
+        c1 = tree c[0], symbols
         c1.optional = optional
-        c2 = tree c[1], special
+        c2 = tree c[1], symbols
         Sequence.new self, c1, c2
       else
         grouped = list.group_by{ |w| w[0] }
-        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !special.special(w[0]) }.map{ |v, _| v }
+        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !symbols.symbols(w[0]) }.map{ |v, _| v }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
         end
-        a = Alternate.new self, special, list
+        a = Alternate.new self, symbols, list
         a.children.unshift c if c
         a
       end
@@ -335,7 +335,7 @@ module List
         @special_map ||= {}
       end
 
-      def special(s)
+      def symbols(s)
         special_map[s]
       end
 
@@ -388,11 +388,11 @@ module List
     end
 
     class Node
-      attr_accessor :engine, :optional, :special, :root
+      attr_accessor :engine, :optional, :symbols, :root
 
-      def initialize(engine, special)
+      def initialize(engine, symbols)
         @engine = engine
-        @special = special
+        @symbols = symbols
         @children = []
       end
 
@@ -670,9 +670,9 @@ module List
 
     class Alternate < Node
 
-      def initialize(engine, special, list)
+      def initialize(engine, symbols, list)
         super(engine, nil)
-        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, special ) }
+        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, symbols ) }
       end
 
       def convert

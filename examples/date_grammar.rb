@@ -25,7 +25,7 @@ date_20th_century = m.rx(
   ],
   normalize_whitespace: true,
   atomic: true,
-  special: {
+  symbols: {
     year: year,
     mday: mday,
     wday: wday,
