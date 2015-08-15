@@ -111,7 +111,34 @@ If true, the default non-capturing grouping expression is `(?:...)` rather than 
 default: false
 ```
 
-Whether boundary expressions should be attached to the margins of every expression in the list.
+Whether boundary expressions should be attached to the margins of every expression in the list. If this value is simply true, this means
+each items marginal characters, the first and the last, are tested to see whether they are word characters and if so the word
+boundary symbol, `\b`, is appended to them where appropriate. There are several variants on this, however:
+
+```ruby
+bound: :word   # same as bound: true
+```
+
+```ruby
+bound: :line
+```
+
+Each item should take up an entire line, so the boundary symbols are `^` and `$`.
+
+```ruby
+bound: :string
+```
+
+Each item should match the entire string compared against, so the boundary symbols are `\A` and `\z`.
+
+```ruby
+bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d) '}
+```
+
+If you have an ad hoc boundary definition -- here it is a digit/non-digit boundary -- you may specify it so. The test parameter
+identifies marginal characters that require the boundary tests and the `:left` and `:right` symbols identify the boundary conditions.
+
+Note that if you use ad hoc boundaries there are defaults. The default test is `/\w/` and the default boundary conditions are both `\b`.
 
 ### trim 
 
