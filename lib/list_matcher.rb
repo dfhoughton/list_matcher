@@ -2,7 +2,7 @@ require "list_matcher/version"
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :trim, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -22,7 +22,7 @@ module List
           atomic:               true,
           backtracking:         true,
           bound:                false,
-          trim:                 false,
+          strip:                false,
           case_insensitive:     false,
           multiline:            false,
           normalize_whitespace: false,
@@ -32,7 +32,7 @@ module List
         )
       @atomic               = atomic
       @backtracking         = backtracking
-      @trim                 = trim || normalize_whitespace
+      @strip                = strip || normalize_whitespace
       @case_insensitive     = case_insensitive
       @multiline            = multiline
       @symbols              = deep_dup symbols
@@ -82,7 +82,7 @@ module List
         atomic:               @atomic,
         backtracking:         @backtracking,
         bound:                @_bound,
-        trim:                 @trim,
+        strip:                @strip,
         case_insensitive:     @case_insensitive,
         multiline:            @multiline,
         normalize_whitespace: @normalize_whitespace,
@@ -97,7 +97,7 @@ module List
     def pattern( list, opts={} )
       return bud(opts).pattern list unless opts.empty?
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
-      list.map!(&:strip).select!{ |s| s.length > 0 } if trim
+      list.map!(&:strip).select!{ |s| s.length > 0 } if strip
       list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
       return nil if list.empty?
       specializer = Special.new self, @symbols, list

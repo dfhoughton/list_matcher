@@ -142,7 +142,7 @@ identifies marginal characters that require the boundary tests and the `:left` a
 
 Note that if you use ad hoc boundaries there are defaults. The default test is `/\w/` and the default boundary conditions are both `\b`.
 
-### trim 
+### strip 
 
 ```ruby
 default: false

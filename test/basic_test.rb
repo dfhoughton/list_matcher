@@ -194,9 +194,9 @@ class BasicTest < Minitest::Test
     assert_equal '(?<!\d)[12](?!\d)', rx
   end
 
-  def test_dup_trim
+  def test_dup_strip
     m = List::Matcher.new atomic: false
-    rx = m.pattern [%( cat )], trim: true
+    rx = m.pattern [%( cat )], strip: true
     assert_equal 'cat', rx
   end
 
