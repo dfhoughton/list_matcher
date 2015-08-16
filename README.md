@@ -117,7 +117,7 @@ default: false
 ```
 
 Whether boundary expressions should be attached to the margins of every expression in the list. If this value is simply true, this means
-each items marginal characters, the first and the last, are tested to see whether they are word characters and if so the word
+each item's marginal characters, the first and the last, are tested to see whether they are word characters and if so the word
 boundary symbol, `\b`, is appended to them where appropriate. There are several variants on this, however:
 
 ```ruby
