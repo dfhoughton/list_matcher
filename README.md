@@ -203,7 +203,7 @@ List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ], norm
 
 You can tell `List::Matcher` that certain character sequences should be regarded as "symbols". It will then leave
 these unmolested, replacing them in the generated regex with whatever you map the symbol sequences to. The keys in
-the symbol hash are expected to be strings, symbols, or `Regexp`s. Symbol keys are converted to their
+the symbol hash are expected to be strings, symbols, or `Regexps`. Symbol keys are converted to their
 sequence by stringification. `Regexp` keys convert any sequence they match.
 
 ```ruby
@@ -215,7 +215,7 @@ List::Matcher.pattern [ 'Catch foo', 'foo', 'Fahrenheit foo' ], symbols: { foo: 
 # "(?:(?:(?:Catch|Fahrenheit)\\ )?\\d++)"
 ```
 
-Because it is possible for symbol sequences to overlap, sequences with string or symbol keys are evaluated before `Regexp`s, and longer keys are
+Because it is possible for symbol sequences to overlap, sequences with string or symbol keys are evaluated before `Regexps`, and longer keys are
 evaluated before shorter ones.
 
 ### name
