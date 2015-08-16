@@ -150,10 +150,22 @@ default: false
 
 Strip whitespace off the margins of items in the list.
 
+```ruby
+List::Matcher.pattern ['     cat     ']                # "(?:(?:\\ ){5}cat(?:\\ ){5})"
+List::Matcher.pattern ['     cat     '], strip: true   # "(?:cat)"
+```
+
 ### case_insensitive 
 
 ```ruby
 default: false
+```
+
+Generate a case-insensitive regular expression.
+
+```ruby
+List::Matcher.pattern %w( Cat cat CAT )                           # "(?:C(?:AT|at)|cat)"
+List::Matcher.pattern %w( Cat cat CAT ), case_insensitive: true   # "(?i:cat)"
 ```
 
 ### multiline 
@@ -161,6 +173,16 @@ default: false
 ```ruby
 default: false
 ```
+
+Generate a multi-line regex.
+
+```ruby
+List::Matcher.pattern %w(cat), multiline: true   # "(?m:cat)"
+```
+
+The special feature of a multi-line regular expression is that `.` can grab newline characters. Because `List::Matcher`
+never produces `.` on its own, this option is only useful in conjunction with the `symbols` option, which lets one
+inject snippets of hand, or at least elsewhere, generated regex into the one generated.
 
 ### normalize_whitespace 
 
