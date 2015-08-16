@@ -40,7 +40,7 @@ puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?+|2\d?
 
 `List::Matcher` facilitates generating efficient regexen programmatically. This is useful, for example, when looking for
 occurrences of particular words or phrases in free-form text. `List::Matcher` will automatically generate regular expressions
-that minimize backtracking, so they tend to be as fast as one could hope a regular expression would be. (The general strategy is
+that minimize backtracking, so they tend to be as fast as one could hope a regular expression to be. (The general strategy is
 to represent the items in the list as a trie.)
 
 `List::Matcher` has many options and the initialization of a matcher for pattern generation is somewhat complex, so various methods
@@ -52,7 +52,7 @@ List::Matcher.pattern %( cat dog )   # "(?:cat|dog)"
 List::Matcher.rx      %( cat dog )   # /(?:cat|dog)/
 ```
 
-If you plan to generate multiple regexen, or have complicated options which you always use, you may as well generate a configured
+If you plan to generate multiple regexen, or have complicated options which you always use, you should generate a configured
 instance first:
 
 ```ruby
