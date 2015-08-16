@@ -32,8 +32,8 @@ puts m.pattern %w( catttttttttt )                          # (?:cat{10})
 puts m.pattern %w( cat-t-t-t-t-t-t-t-t-t )                 # (?:ca(?:t-){9}t)
 puts m.pattern %w( catttttttttt batttttttttt )             # (?:[bc]at{10})
 puts m.pattern %w( cad bad dad )                           # (?:[b-d]ad)
-puts m.pattern %w( cat catalog )                           # (?:cat(?:alog)?+)
-puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?+|2\d?+|3[01]?+)
+puts m.pattern %w( cat catalog )                           # (?:cat(?:alog)?)
+puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?|2\d?|3[01]?)
 ```
 
 ## Description
@@ -48,8 +48,8 @@ are provided to minimize initializations and the number of times you specify opt
 class methods, either `pattern` which generates a string, or `rx`, which returns a `Regexp` object:
 
 ```ruby
-List::Matcher.pattern %( cat dog )   # "(?:cat|dog)"
-List::Matcher.rx      %( cat dog )   # /(?:cat|dog)/
+List::Matcher.pattern %w( cat dog )   # "(?:cat|dog)"
+List::Matcher.rx      %w( cat dog )   # /(?:cat|dog)/
 ```
 
 If you plan to generate multiple regexen, or have complicated options which you always use, you should generate a configured
