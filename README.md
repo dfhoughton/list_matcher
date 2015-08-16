@@ -182,7 +182,7 @@ List::Matcher.pattern %w(cat), multiline: true   # "(?m:cat)"
 
 The special feature of a multi-line regular expression is that `.` can grab newline characters. Because `List::Matcher`
 never produces `.` on its own, this option is only useful in conjunction with the `symbols` option, which lets one
-inject snippets of hand, or at least elsewhere, generated regex into the one generated.
+inject snippets of regex into the one generated.
 
 ### normalize_whitespace 
 
@@ -190,13 +190,27 @@ inject snippets of hand, or at least elsewhere, generated regex into the one gen
 default: false
 ```
 
+This strips whitespace from items in the list and treats all internal whitespace as equivalent.
+
+```ruby
+List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ]
+# List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ]
+List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ], normalize_whitespace: true
+# "(?:(?:ca(?:mel|t)|dog)\\s++walker)"
+```
+
 ### symbols
 
 ### name
 
 If you assign your pattern a name, it will be constructed with a named group such that you can extract
-the substring matched. This is mostly useful if you are using `List::Matcher` to compose complex regexen
-incrementally. E.g., from the examples directory,
+the substring matched.
+
+```ruby
+List::Matcher.pattern %w(cat), name: :cat   # "(?<cat>cat)"
+```
+
+This is mostly useful if you are using `List::Matcher` to compose complex regexen incrementally. E.g., from the examples directory,
 
 ```ruby
 require 'list_matcher'
