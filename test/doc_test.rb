@@ -97,6 +97,8 @@ class DocTest < Minitest::Test
     assert_equal '2000', m[:year]
     assert_nil m[:wday]
     assert_nil date_20th_century.match('this is not actually a date')
+    assert_equal "(?:\\#\\ is\\ sometimes\\ called\\ the\\ pound\\ symbol|cat\\ and\\ dog)", (List::Matcher.pattern [ 'cat and dog', '# is sometimes called the pound symbol' ])
+    assert_equal "(?-x:cat and dog|# is sometimes called the pound symbol)", (List::Matcher.pattern [ 'cat and dog', '# is sometimes called the pound symbol' ], not_extended: true)
   end
 
 end

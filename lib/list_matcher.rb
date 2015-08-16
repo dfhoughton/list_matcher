@@ -2,7 +2,8 @@ require "list_matcher/version"
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound, :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound, 
+      :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet, :not_extended
 
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
@@ -25,6 +26,7 @@ module List
           strip:                false,
           case_insensitive:     false,
           multiline:            false,
+          not_extended:         false,
           normalize_whitespace: false,
           symbols:              {},
           name:                 false,
@@ -35,6 +37,7 @@ module List
       @strip                = strip || normalize_whitespace
       @case_insensitive     = case_insensitive
       @multiline            = multiline
+      @not_extended         = not_extended
       @symbols              = deep_dup symbols
       @_bound               = bound
       @bound                = !!bound
@@ -65,11 +68,16 @@ module List
       elsif !( bound === false )
         raise "unfamiliar value for :bound option: #{bound.inspect}"
       end
-      if normalize_whitespace
-        @symbols[' '] = { pattern: '\s++' }
-      end
       symbols.keys.each do |k|
         raise "symbols variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
+      end
+      if normalize_whitespace
+        @symbols[' '] = { pattern: '\s++' }
+      elsif not_extended
+        @symbols[' '] = { pattern: ' ' }
+      end
+      if not_extended
+        @symbols['#'] = { pattern: '#' }
       end
       if vet
         Special.new( self, @symbols, [] ).verify
@@ -85,6 +93,7 @@ module List
         strip:                @strip,
         case_insensitive:     @case_insensitive,
         multiline:            @multiline,
+        not_extended:         @not_extended,
         normalize_whitespace: @normalize_whitespace,
         symbols:              @symbols,
         name:                 @name,
@@ -124,8 +133,8 @@ module List
     end
 
     def modifiers
-      ( @modifiers ||= if case_insensitive || multiline
-        [ ( 'i' if case_insensitive ), ( 'm' if multiline ) ].compact.join
+      ( @modifiers ||= if case_insensitive || multiline || not_extended
+        [ [ ( 'i' if case_insensitive ), ( 'm' if multiline ), ( '-x' if not_extended ) ].compact.join ]
       else
         [nil]
       end )[0]

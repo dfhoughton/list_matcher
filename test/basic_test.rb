@@ -245,4 +245,13 @@ class BasicTest < Minitest::Test
       List::Matcher.pattern %w(cat), symbols: { foo: '+' }, vet: true
     end
   end
+
+  def test_not_extended
+    m = List::Matcher.new not_extended: true
+    rx = m.pattern [ ' ', '#' ]
+    assert_equal '(?-x:#| )', rx
+    rx = Regexp.new rx
+    assert rx === ' '
+    assert rx === '#'
+  end
 end
