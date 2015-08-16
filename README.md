@@ -105,6 +105,11 @@ default: true
 If true, the default non-capturing grouping expression is `(?:...)` rather than `(?>...)`, and the optional quantifier is
 `?` rather than `?+`.
 
+```ruby
+List::Matcher.pattern %w( cat dog )                        # "(?:cat|dog)"
+List::Matcher.pattern %w( cat dog ), backtracking: false   # "(?>cat|dog)"
+```
+
 ### bound 
 
 ```ruby
@@ -122,16 +127,29 @@ bound: :word
 This is the same as `bound: true`.
 
 ```ruby
+List::Matcher.pattern %w(cat), bound: :word   # "(?:\\bcat\\b)"
+List::Matcher.pattern %w(cat), bound: true    # "(?:\\bcat\\b)"
+```
+
+```ruby
 bound: :line
 ```
 
 Each item should take up an entire line, so the boundary symbols are `^` and `$`.
 
 ```ruby
+List::Matcher.pattern %w(cat), bound: :line   # "(?:^cat$)"
+```
+
+```ruby
 bound: :string
 ```
 
 Each item should match the entire string compared against, so the boundary symbols are `\A` and `\z`.
+
+```ruby
+List::Matcher.pattern %w(cat), bound: :string   # "(?:\\Acat\\z)"
+```
 
 ```ruby
 bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d) '}
