@@ -152,11 +152,16 @@ List::Matcher.pattern %w(cat), bound: :string   # "(?:\\Acat\\z)"
 ```
 
 ```ruby
-bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d) '}
+bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)'}
 ```
 
 If you have an ad hoc boundary definition -- here it is a digit/non-digit boundary -- you may specify it so. The test parameter
 identifies marginal characters that require the boundary tests and the `:left` and `:right` symbols identify the boundary conditions.
+
+```ruby
+List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)'}
+# "(?:(?<!\\d)[1-9](?:\\d\\d?)?(?!\\d))"
+```
 
 Note that if you use ad hoc boundaries there are defaults. The default test is `/\w/` and the default boundary conditions are both `\b`.
 
