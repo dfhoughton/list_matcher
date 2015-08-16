@@ -76,11 +76,11 @@ m2 = m.bud case_insensitive: false
 ```
 
 Basically, you can mix in options in whatever way suits you. Constructing configured instances gives you a tiny bit of efficiency, but
-mostly it saves your specifying these options in multiple places.
+mostly it saves you from specifying these options in multiple places.
 
 ## Options
 
-The `rx` and `pattern` methods take the same options. These are
+The one can provide to `new`, `bud`, `pattern`, or `rx` are all the same. These are
 
 ### atomic 
 
