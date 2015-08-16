@@ -318,6 +318,27 @@ List::Matcher.new symbols: { aw_nuts: '+++' }
 then you may want to vet your symbols. Vetting is not done by default because one assumes you've worked out
 your substitutions on your own time and we need not waste runtime checking them.
 
+### not_extended
+
+```ruby
+default: false
+```
+
+Under normal circumstances `List::Matcher` will escape simple space characters and `#` lest the pattern
+generated be included in an *extended* regular expression where these are meta-characters. If you find this
+makes the expressions unreadable or otherwise annoying, you can tell `List::Matcher` to explicitly generate
+a non-extended regular expression. This may safely be included in any sort of regular expression, but it will
+be wrapped with the modifier expression `(?-x:...)`.
+
+```ruby
+List::Matcher.pattern [ 'cat and dog', '# is sometimes called the pound symbol' ]
+# "(?:\\#\\ is\\ sometimes\\ called\\ the\\ pound\\ symbol|cat\\ and\\ dog)"
+List::Matcher.pattern [ 'cat and dog', '# is sometimes called the pound symbol' ], not_extended: true
+# "(?-x:cat and dog|# is sometimes called the pound symbol)"
+```
+
+Note that `List::Matcher` will continue to quote other white space characters.
+
 ## Benchmarks
 
 Efficiency isn't the principle purpose of List::Matcher, but in almost all cases List::Matcher
