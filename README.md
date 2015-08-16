@@ -201,6 +201,20 @@ List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ], norm
 
 ### symbols
 
+You can tell `List::Matcher` that certain character sequences should be regarded as "symbols". It will then leave
+these unmolested, replacing them in the generated regex with whatever you map the symbol sequences to. The keys in
+the symbol hash are expected to be strings, symbols, or regular expressions. Symbol keys are converted to their
+sequence by stringification. `Regexp` keys convert any sequence they match.
+
+```ruby
+List::Matcher.pattern [ 'Catch 22', '1984', 'Fahrenheit 451' ], symbols: { /\d+/ => '\d++' }
+# "(?:(?:(?:Catch|Fahrenheit)\\ )?\\d++)"
+List::Matcher.pattern [ 'Catch foo', 'foo', 'Fahrenheit foo' ], symbols: { 'foo' => '\d++' }
+# "(?:(?:(?:Catch|Fahrenheit)\\ )?\\d++)"
+List::Matcher.pattern [ 'Catch foo', 'foo', 'Fahrenheit foo' ], symbols: { foo: '\d++' }
+# "(?:(?:(?:Catch|Fahrenheit)\\ )?\\d++)"
+```
+
 ### name
 
 If you assign your pattern a name, it will be constructed with a named group such that you can extract
