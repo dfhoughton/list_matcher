@@ -55,9 +55,9 @@ module List
         @left_bound  = '^'
         @right_bound = '$'
       elsif bound.is_a? Hash
-        @word_test   = bound[:test]  || /\w/
-        @left_bound  = bound[:left]  || '\b'
-        @right_bound = bound[:right] || '\b'
+        @word_test   = bound[:test]  || raise(SyntaxError.new('no boundary test provided'))
+        @left_bound  = bound[:left]  || raise(SyntaxError.new('no left boundary expression provided'))
+        @right_bound = bound[:right] || raise(SyntaxError.new('no right boundary expression provided'))
       elsif bound === true || bound == :word
         @word_test   = /\w/
         @left_bound  = '\b'

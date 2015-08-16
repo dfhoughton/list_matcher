@@ -163,8 +163,6 @@ List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', rig
 # "(?:(?<!\\d)[1-9](?:\\d\\d?)?(?!\\d))"
 ```
 
-Note that if you use ad hoc boundaries there are defaults. The default test is `/\w/` and the default boundary conditions are both `\b`.
-
 ### strip 
 
 ```ruby
