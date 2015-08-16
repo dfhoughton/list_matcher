@@ -194,7 +194,7 @@ This strips whitespace from items in the list and treats all internal whitespace
 
 ```ruby
 List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ]
-# List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ]
+# "(?:\\ (?:\\ dog\\ walker|cat\\ \\ walker\\ )|camel\\ \\ walker)"
 List::Matcher.pattern [ ' cat  walker ', '  dog walker', 'camel  walker' ], normalize_whitespace: true
 # "(?:(?:ca(?:mel|t)|dog)\\s++walker)"
 ```
