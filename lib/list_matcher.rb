@@ -186,14 +186,14 @@ module List
         end
         c1 = tree c[0], symbols
         c2 = tree c[1], symbols
-        c2.optional = optional
+        c2 = c2.optionalize optional
         Sequence.new self, c1, c2
       elsif c = best_suffix(list)   # found a fixed-width suffix pattern
         if optional = c[0].include?('')
-          c[0].reject!{ |w| w == '' }
+          c[0].reject!{ |w| w == '' }   # TODO make this faster with index
         end
         c1 = tree c[0], symbols
-        c1.optional = optional
+        c1 = c1.optionalize optional
         c2 = tree c[1], symbols
         Sequence.new self, c1, c2
       else
@@ -476,6 +476,13 @@ module List
         engine.quote s
       end
 
+      def optionalize(bool)
+        if bool
+          self.optional = bool
+        end
+        self
+      end
+
     end
 
     class SpecialPattern < Node
@@ -488,6 +495,10 @@ module List
         @atomic = !!atomic
         @left = !!word_left
         @right = !!word_right
+      end
+
+      def dup
+        self.class.new engine, char, var, pat, atomic: atomic?, word_left: left?, word_right: right?
       end
 
       def left?
@@ -509,6 +520,15 @@ module List
       def convert
         rx = @pat
         finalize rx
+      end
+
+      def optionalize(bool)
+        n = self
+        if bool
+          n = n.dup
+          n.optional = bool
+        end
+        n
       end
     end
 
