@@ -116,7 +116,7 @@ List::Matcher.pattern %w( cat dog ), backtracking: false   # "(?>cat|dog)"
 default: false
 ```
 
-Whether boundary expressions should be attached to the margins of every expression in the list. If this value is simply true, this means
+Whether boundary expressions should be attached to the margins of every expression in the list (but see note below). If this value is simply true, this means
 each item's marginal characters, the first and the last, are tested to see whether they are word characters and if so the word
 boundary symbol, `\b`, is appended to them where appropriate. There are several variants on this, however:
 
@@ -162,6 +162,9 @@ identifies marginal characters that require the boundary tests and the `:left` a
 List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)'}
 # "(?:(?<!\\d)[1-9](?:\\d\\d?)?(?!\\d))"
 ```
+
+** NOTE ** Because boundary tests cannot be applied to symbols, the bound option will give you strange results if you use it
+with a list any of whose items have a symbol at their leading or trailing margin.
 
 ### strip 
 
