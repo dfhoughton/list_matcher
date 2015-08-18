@@ -163,7 +163,7 @@ List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', rig
 # "(?:(?<!\\d)[1-9](?:\\d\\d?)?(?!\\d))"
 ```
 
-** NOTE ** Because boundary tests cannot be applied to symbols, the bound option will give you strange results if you use it
+**NOTE** Because boundary tests cannot be applied to symbols, the bound option will give you strange results if you use it
 with a list any of whose items have a symbol at their leading or trailing margin.
 
 ### strip 
