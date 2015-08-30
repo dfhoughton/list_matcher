@@ -149,6 +149,16 @@ class BasicTest < Minitest::Test
     assert ' cat ' !~ rx, 'word boundaries do not suffice'
   end
 
+  def test_string_left_bound
+    rx = List::Matcher.pattern ['cat'], bound: :string_left
+    assert_equal '(?:\Acat)', rx
+  end
+
+  def test_string_right_bound
+    rx = List::Matcher.pattern ['cat'], bound: :string_right
+    assert_equal '(?:cat\z)', rx
+  end
+
   def test_line_bound
     rx = List::Matcher.pattern ['cat'], bound: :line
     assert_equal '(?:^cat$)', rx
@@ -156,6 +166,31 @@ class BasicTest < Minitest::Test
     assert rx === 'cat', 'matches whole string'
     assert rx === "cat\ndog", 'line breaks suffice'
     assert ' cat ' !~ rx, 'word boundaries do not suffice'
+  end
+
+  def test_line_left_bound
+    rx = List::Matcher.pattern ['cat'], bound: :line_left
+    assert_equal '(?:^cat)', rx
+  end
+
+  def test_line_right_bound
+    rx = List::Matcher.pattern ['cat'], bound: :line_right
+    assert_equal '(?:cat$)', rx
+  end
+
+  def test_word_bound
+    rx = List::Matcher.pattern %w( cat dog ), bound: :word
+    assert_equal '(?:\b(?:cat|dog)\b)', rx
+  end
+
+  def test_word_left_bound
+    rx = List::Matcher.pattern %w( cat dog ), bound: :word_left
+    assert_equal '(?:\b(?:cat|dog))', rx
+  end
+
+  def test_word_right_bound
+    rx = List::Matcher.pattern %w( cat dog ), bound: :word_right
+    assert_equal '(?:(?:cat|dog)\b)', rx
   end
 
   def test_dup_atomic

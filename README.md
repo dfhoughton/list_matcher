@@ -151,6 +151,22 @@ Each item should match the entire string compared against, so the boundary symbo
 List::Matcher.pattern %w(cat), bound: :string   # "(?:\\Acat\\z)"
 ```
 
+**NOTE** for each of these variants, `:word`, `:line`, and `:string` there are `left` and `right` subvarieties that
+only append their boundary marker to that side of the word:
+
+```ruby
+List::Matcher.pattern %w(cat), bound: :word_left     # "(?:\\bcat)"
+List::Matcher.pattern %w(cat), bound: :string_left   # "(?:\\Acat)"
+List::Matcher.pattern %w(cat), bound: :line_right    # "(?:cat$)"
+```
+
+Note also that `List::Matcher` will only append the boundary marker when it is appropriate according to
+the test, so items for which the test fails will not receive a boundary marker of any sort:
+
+```ruby
+List::Matcher.pattern %w( cat #@% ), bound: :word   # "(?:\\#@%|\\bcat\\b)"
+```
+
 ```ruby
 bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)'}
 ```
@@ -162,6 +178,9 @@ identifies marginal characters that require the boundary tests and the `:left` a
 List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', right: '(?!\d)'}
 # "(?:(?<!\\d)[1-9](?:\\d\\d?)?(?!\\d))"
 ```
+
+As with the predefined boundaries -- `:word_left`, `:line_right`, `:string_left`, etc. -- you can bound items only at one
+margin, in this case by providing only the `left:` or `right:` key-value pair.
 
 **NOTE** Because boundary tests cannot be applied to symbols, the bound option will give you strange results if you use it
 with a list any of whose items have a symbol at their leading or trailing margin.

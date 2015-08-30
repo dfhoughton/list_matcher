@@ -49,23 +49,40 @@ module List
           @name = name
         end
       end
-      if bound == :string
-        @word_test   = /./
-        @left_bound  = '\A'
-        @right_bound = '\z'
-      elsif bound == :line
-        @word_test   = /./
-        @left_bound  = '^'
-        @right_bound = '$'
-      elsif bound.is_a? Hash
-        @word_test   = bound[:test]  || raise(SyntaxError.new('no boundary test provided'))
-        @left_bound  = bound[:left]  || raise(SyntaxError.new('no left boundary expression provided'))
-        @right_bound = bound[:right] || raise(SyntaxError.new('no right boundary expression provided'))
-      elsif bound === true || bound == :word
+      case bound
+      when TrueClass
         @word_test   = /\w/
         @left_bound  = '\b'
         @right_bound = '\b'
-      elsif !( bound === false )
+      when FalseClass
+      when Symbol
+        case bound
+        when :string, :string_left, :string_right
+          @word_test   = /./
+          @left_bound  = '\A'
+          @right_bound = '\z'
+        when :line, :line_left, :line_right
+          @word_test   = /./
+          @left_bound  = '^'
+          @right_bound = '$'
+        when :word, :word_left, :word_right
+          @word_test   = /\w/
+          @left_bound  = '\b'
+          @right_bound = '\b'
+        else
+          raise "unfamiliar value for :bound option: #{bound.inspect}"
+        end
+        if /_left/ === bound.to_s
+          @right_bound = nil
+        elsif /_right/ === bound.to_s
+          @left_bound = nil
+        end
+      when Hash
+        @word_test   = bound[:test] || raise('no boundary test provided')
+        @left_bound  = bound[:left]
+        @right_bound = bound[:right]
+        raise 'neither bound provided' unless @left_bound || @right_bound
+      else
         raise "unfamiliar value for :bound option: #{bound.inspect}"
       end
       symbols.keys.each do |k|
@@ -339,12 +356,16 @@ module List
           end
         end
         if engine.bound
-          c = ( max += 1 ).chr
-          @left = SpecialPattern.new engine, c, c, engine.left_bound
-          @specials << @left
-          c = ( max += 1 ).chr
-          @right = SpecialPattern.new engine, c, c, engine.right_bound
-          @specials << @right
+          if engine.left_bound
+            c = ( max += 1 ).chr
+            @left = SpecialPattern.new engine, c, c, engine.left_bound
+            @specials << @left
+          end
+          if engine.right_bound
+            c = ( max += 1 ).chr
+            @right = SpecialPattern.new engine, c, c, engine.right_bound
+            @specials << @right
+          end
         end
       end
 
@@ -384,11 +405,11 @@ module List
               p = specials.detect{ |sp| sp.var === p }
               special_map[p.char] = p
               if engine.bound
-                if i == 0 && p.left
+                if i == 0 && engine.left_bound && p.left
                   p = "#{left}#{p}" if t
                   l = true
                 end
-                if i == e && p.right
+                if i == e && engine.right_bound && p.right
                   p = "#{p}#{right}"
                   r = true
                 end
@@ -396,11 +417,11 @@ module List
             else
               p = p.downcase if engine.case_insensitive
               if engine.bound
-                if i == 0 && engine.word_test === p[0]
+                if i == 0 && engine.left_bound && engine.word_test === p[0]
                   p = "#{left}#{p}"
                   l = true
                 end
-                if i == e && engine.word_test === p[-1]
+                if i == e && engine.right_bound && engine.word_test === p[-1]
                   p = "#{p}#{right}"
                   r = true
                 end
