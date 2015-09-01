@@ -276,7 +276,7 @@ class BasicTest < Minitest::Test
   end
 
   def test_vetting_bad
-    assert_raises SyntaxError do
+    assert_raises List::Matcher::Error do
       List::Matcher.pattern %w(cat), symbols: { foo: '+' }, vet: true
     end
   end

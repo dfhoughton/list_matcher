@@ -5,6 +5,9 @@ module List
     attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound, 
       :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet, :not_extended
 
+    # a special exception class for List::Matcher
+    class Error < ::StandardError; end
+
     # convenience method for one-off regexen where there's no point in keeping
     # around a pattern generator
     def self.pattern(list, opts={})
@@ -44,9 +47,12 @@ module List
       @normalize_whitespace = normalize_whitespace
       @vet                  = vet
       if name
-        raise "" unless name.is_a?(String) || name.is_a?(Symbol)
-        if Regexp.new "(?<#{name}>.*)"   # stir up any errors that might arise from using this name in a named capture
+        raise Error, "name must be a string or symbol" unless name.is_a?(String) || name.is_a?(Symbol)
+        begin
+          Regexp.new "(?<#{name}>.*)"   # stir up any errors that might arise from using this name in a named capture
           @name = name
+        rescue
+          raise Error, "#{name} does not work as the name of a named group"
         end
       end
       case bound
@@ -70,7 +76,7 @@ module List
           @left_bound  = '\b'
           @right_bound = '\b'
         else
-          raise "unfamiliar value for :bound option: #{bound.inspect}"
+          raise Error, "unfamiliar value for :bound option: #{bound.inspect}"
         end
         if /_left/ === bound.to_s
           @right_bound = nil
@@ -78,15 +84,25 @@ module List
           @left_bound = nil
         end
       when Hash
-        @word_test   = bound[:test] || raise('no boundary test provided')
+        @word_test   = bound[:test] || raise( Error, 'no boundary test provided')
         @left_bound  = bound[:left]
         @right_bound = bound[:right]
-        raise 'neither bound provided' unless @left_bound || @right_bound
+        raise Error, 'neither bound provided' unless @left_bound || @right_bound
+        raise Error, 'test must be Regexp or String' unless @word_test.is_a?(Regexp) || @word_test.is_a?(String)
+        @word_test = Regexp.new @word_test unless @word_test.is_a?(Regexp)
+        [ @left_bound, @right_bound ].compact.each do |b|
+          raise Error, 'bounds must be strings' unless b.is_a?(String)
+          begin
+            Regexp.new b
+          rescue
+            raise Error, "bad boundary pattern: #{b}"
+          end
+        end
       else
-        raise "unfamiliar value for :bound option: #{bound.inspect}"
+        raise Error, "unfamiliar value for :bound option: #{bound.inspect}"
       end
       symbols.keys.each do |k|
-        raise "symbols variable #{k} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
+        raise Error, "symbols variable #{k.inspect} is neither a string, a symbol, nor a regex" unless k.is_a?(String) || k.is_a?(Symbol) || k.is_a?(Regexp)
       end
       if normalize_whitespace
         @symbols[' '] = { pattern: '\s++' }
@@ -342,7 +358,7 @@ module List
             c = ( max += 1 ).chr
             sp = if opts.is_a? Hash
               pat = opts.delete :pattern
-              raise "variable #{var} requires a pattern" unless pat || var.is_a?(Regexp)
+              raise Error, "symbol #{var} requires a pattern" unless pat || var.is_a?(Regexp)
               pat ||= var.to_s
               SpecialPattern.new engine, c, var, pat, **opts
             elsif opts.is_a? String
@@ -350,7 +366,7 @@ module List
             elsif var.is_a?(Regexp) && opts.nil?
               SpecialPattern.new engine, c, var, nil
             else
-              raise "variable #{var} requires a pattern"
+              raise Error, "symbol #{var} requires a pattern"
             end
             ar << sp
           end
@@ -375,7 +391,7 @@ module List
           begin
             Regexp.new s.pat
           rescue
-            raise SyntaxError.new "the symbol #{s.var} has an ill-formed pattern: #{s.pat}"
+            raise Error, "the symbol #{s.symbol} has an ill-formed pattern: #{s.pat}"
           end
         end
       end
@@ -440,8 +456,8 @@ module List
       attr_accessor :engine, :optional, :symbols, :root
 
       def initialize(engine, symbols)
-        @engine = engine
-        @symbols = symbols
+        @engine   = engine
+        @symbols  = symbols
         @children = []
       end
 
@@ -507,15 +523,16 @@ module List
     end
 
     class SpecialPattern < Node
-      attr_accessor :char, :var, :left, :right, :pat
+      attr_accessor :char, :var, :left, :right, :pat, :symbol
       def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), word_left: false, word_right: false)
         super(engine, nil)
-        @char = char
-        @var = var.is_a?(String) || var.is_a?(Symbol) ? Regexp.new(Regexp.quote(var.to_s)) : var
-        @pat = pat || var.to_s
+        @char   = char
+        @symbol = var.to_s
+        @var    = var.is_a?(String) || var.is_a?(Symbol) ? Regexp.new(Regexp.quote(var.to_s)) : var
+        @pat    = pat || var.to_s
         @atomic = !!atomic
-        @left = !!word_left
-        @right = !!word_right
+        @left   = !!word_left
+        @right  = !!word_right
       end
 
       def dup
