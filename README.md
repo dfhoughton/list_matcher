@@ -18,7 +18,7 @@ Or install it yourself as:
 
     $ gem install list_matcher
 
-## Usage
+## Synopsis
 
 ```ruby
 require 'list_matcher'
@@ -35,6 +35,16 @@ puts m.pattern %w( cad bad dad )                           # (?:[b-d]ad)
 puts m.pattern %w( cat catalog )                           # (?:cat(?:alog)?)
 puts m.pattern (1..31).to_a                                # (?:[4-9]|1\d?|2\d?|3[01]?)
 ```
+
+## Usage
+
+One provides a list of expressions to match and perhaps some options and receives in turn either a
+compiled `Regexp` or a string from which such a regex can be compiled. The `rx` method provides a compiled
+regex and `pattern`, a string. The latter is chiefly useful when composing a larger regex out of smaller
+pieces.
+
+The options one may provide to `List::Matcher` are all validated. Any errors cause it to raise a
+`List::Matcher::Error` exception.
 
 ## Description
 

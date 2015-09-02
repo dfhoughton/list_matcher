@@ -84,7 +84,7 @@ module List
           @left_bound = nil
         end
       when Hash
-        @word_test   = bound[:test] || raise( Error, 'no boundary test provided')
+        @word_test   = bound[:test] || raise( Error, 'no boundary test provided' )
         @left_bound  = bound[:left]
         @right_bound = bound[:right]
         raise Error, 'neither bound provided' unless @left_bound || @right_bound
