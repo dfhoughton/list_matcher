@@ -326,7 +326,7 @@ module List
     end
 
     class Special
-      attr_reader :engine
+      attr_reader :engine, :special_map
       attr_accessor :specials, :list, :left, :right
 
       def initialize( engine, specials, list )
@@ -381,6 +381,7 @@ module List
             @specials << @right
           end
         end
+        @special_map = Hash[@specials.map{ |s| [ s.char, s ] }]
       end
 
       # confirm that all special patterns are legitimate regexen
@@ -392,10 +393,6 @@ module List
             raise Error, "the symbol #{s.symbol} has an ill-formed pattern: #{s.pat}"
           end
         end
-      end
-
-      def special_map
-        @special_map ||= {}
       end
 
       # maps a symbol character back to the symbol object
@@ -410,43 +407,37 @@ module List
         else
           Regexp.new '(' + specials.map(&:var).map(&:to_s).join('|') + ')'
         end
-        l = r = false
         list = self.list.uniq.map do |w|
-          parts = w.split rx
+          parts = w.split(rx).select{ |p| p.length > 0 }
           e = parts.size - 1
           (0..e).map do |i|
             p = parts[i]
             if rx === p
               p = specials.detect{ |sp| sp.var === p }
-              special_map[p.char] = p
               if engine.bound
-                if i == 0 && engine.left_bound && p.left
-                  p = "#{left}#{p}" if t
-                  l = true
+                s = p
+                if i == 0 && engine.left_bound && engine.word_test === p.left
+                  s = "#{left}#{s}"
                 end
-                if i == e && engine.right_bound && p.right
-                  p = "#{p}#{right}"
-                  r = true
+                if i == e && engine.right_bound && engine.word_test === p.right
+                  s = "#{s}#{right}"
                 end
+                p = s
               end
             else
               p = p.downcase if engine.case_insensitive
               if engine.bound
                 if i == 0 && engine.left_bound && engine.word_test === p[0]
                   p = "#{left}#{p}"
-                  l = true
                 end
                 if i == e && engine.right_bound && engine.word_test === p[-1]
                   p = "#{p}#{right}"
-                  r = true
                 end
               end
             end
             p
           end.join
         end.uniq.sort
-        special_map[left.char] = left if l
-        special_map[right.char] = right if r
         list
       end
     end
