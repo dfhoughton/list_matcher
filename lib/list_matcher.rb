@@ -329,8 +329,6 @@ module List
       attr_reader :engine
       attr_accessor :specials, :list, :left, :right
 
-      NULL = Regexp.new '(?!)'
-
       def initialize( engine, specials, list )
         @engine = engine
         @list = list
@@ -407,7 +405,7 @@ module List
       # reduce the list to a version ready for pattern generation
       def normalize
         rx = if specials.empty?
-          NULL
+          /(?!)/
         else
           Regexp.new '(' + specials.map(&:var).map(&:to_s).join('|') + ')'
         end
