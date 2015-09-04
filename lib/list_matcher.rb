@@ -197,7 +197,7 @@ module List
     def tree(list, symbols)
       if list.size == 1
         leaves = list[0].chars.map do |c|
-          symbols.symbols(c) || Leaf.new( self, c )
+          symbols[c] || Leaf.new( self, c )
         end
         if leaves.length == 1
           leaves.first
@@ -205,7 +205,7 @@ module List
           Sequence.new self, *leaves
         end
       elsif list.all?{ |w| w.length == 1 }
-        chars = list.select{ |w| !symbols.symbols(w) }
+        chars = list.select{ |w| !symbols[w] }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
@@ -231,7 +231,7 @@ module List
         Sequence.new self, c1, c2
       else
         grouped = list.group_by{ |w| w[0] }
-        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !symbols.symbols(w[0]) }.map{ |v, _| v }
+        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !symbols[w[0]] }.map{ |v, _| v }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
@@ -358,11 +358,11 @@ module List
               pat = opts.delete :pattern
               raise Error, "symbol #{var} requires a pattern" unless pat || var.is_a?(Regexp)
               pat ||= var.to_s
-              SpecialPattern.new engine, c, var, pat, **opts
+              SymbolPattern.new engine, c, var, pat, **opts
             elsif opts.is_a? String
-              SpecialPattern.new engine, c, var, opts
+              SymbolPattern.new engine, c, var, opts
             elsif var.is_a?(Regexp) && opts.nil?
-              SpecialPattern.new engine, c, var, nil
+              SymbolPattern.new engine, c, var, nil
             else
               raise Error, "symbol #{var} requires a pattern"
             end
@@ -372,12 +372,12 @@ module List
         if engine.bound
           if engine.left_bound
             c = ( max += 1 ).chr
-            @left = SpecialPattern.new engine, c, c, engine.left_bound
+            @left = SymbolPattern.new engine, c, c, engine.left_bound
             @specials << @left
           end
           if engine.right_bound
             c = ( max += 1 ).chr
-            @right = SpecialPattern.new engine, c, c, engine.right_bound
+            @right = SymbolPattern.new engine, c, c, engine.right_bound
             @specials << @right
           end
         end
@@ -398,7 +398,8 @@ module List
         @special_map ||= {}
       end
 
-      def symbols(s)
+      # maps a symbol character back to the symbol object
+      def [](s)
         special_map[s]
       end
 
@@ -520,29 +521,21 @@ module List
 
     end
 
-    class SpecialPattern < Node
+    class SymbolPattern < Node
       attr_accessor :char, :var, :left, :right, :pat, :symbol
-      def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), word_left: false, word_right: false)
+      def initialize(engine, char, var, pat, atomic: (var.is_a?(Regexp) && pat.nil?), left: nil, right: nil)
         super(engine, nil)
         @char   = char
         @symbol = var.to_s
         @var    = var.is_a?(String) || var.is_a?(Symbol) ? Regexp.new(Regexp.quote(var.to_s)) : var
         @pat    = pat || var.to_s
         @atomic = !!atomic
-        @left   = !!word_left
-        @right  = !!word_right
+        @left   = left
+        @right  = right
       end
 
       def dup
-        self.class.new engine, char, var, pat, atomic: atomic?, word_left: left?, word_right: right?
-      end
-
-      def left?
-        @left
-      end
-
-      def right?
-        @right
+        self.class.new engine, char, var, pat, atomic: atomic?, left: left, right: right
       end
 
       def atomic?
