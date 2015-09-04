@@ -276,19 +276,19 @@ can be added or to determine whether it is sensible to add boundary sequences be
 that they need grouping if they repeat and that boundary markers don't make sense. You can override this behavior, however.
 You specify the characteristics of the pattern as a hash with the following keys:
 
-#### `:pattern`
+*`:pattern`*
 
 The value is the pattern to substitute for the symbol.
 
-#### `:atomic`
+*`:atomic`*
 
 The pattern needs no grouping if the value is true.
 
-#### `:left`
+*`:left`*
 
 A character to test for the left boundary condition.
 
-#### `:right`
+*`:right`*
 
 A character to test for the right boundary condition.
 
