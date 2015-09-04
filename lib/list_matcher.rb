@@ -427,12 +427,14 @@ module List
             else
               p = p.downcase if engine.case_insensitive
               if engine.bound
+                s = p
                 if i == 0 && engine.left_bound && engine.word_test === p[0]
-                  p = "#{left}#{p}"
+                  s = "#{left}#{s}"
                 end
                 if i == e && engine.right_bound && engine.word_test === p[-1]
-                  p = "#{p}#{right}"
+                  s = "#{s}#{right}"
                 end
+                p = s
               end
             end
             p

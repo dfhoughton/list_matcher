@@ -304,4 +304,9 @@ class BasicTest < Minitest::Test
     rx = List::Matcher.pattern %w(1 2 3 d), bound: :word_right, symbols: { d: { pattern: '\d{4}', left: '0', right: '0' } }, atomic: false
     assert_equal '(?:[1-3]|\d{4})\b', rx
   end
+
+  def test_sort_bound_word
+    rx = List::Matcher.pattern %w(a), bound: :word, atomic: false
+    assert_equal '\ba\b', rx
+  end
 end
