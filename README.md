@@ -192,9 +192,6 @@ List::Matcher.pattern (1...1000).to_a, bound: { test: /\d/, left: '(?<!\d)', rig
 As with the predefined boundaries -- `:word_left`, `:line_right`, `:string_left`, etc. -- you can bound items only at one
 margin, in this case by providing only the `left:` or `right:` key-value pair.
 
-**NOTE** Because boundary tests cannot be applied to symbols, the bound option will give you strange results if you use it
-with a list any of whose items have a symbol at their leading or trailing margin.
-
 ### strip 
 
 ```ruby
