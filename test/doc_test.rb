@@ -103,6 +103,12 @@ class DocTest < Minitest::Test
     assert_equal "(?:\\Acat)", List::Matcher.pattern( %w(cat), bound: :string_left )
     assert_equal "(?:cat$)", List::Matcher.pattern( %w(cat), bound: :line_right )
     assert_equal "(?:\\#@%|\\bcat\\b)", List::Matcher.pattern( %w( cat #@% ), bound: :word )
+    rx = List::Matcher.pattern %w(dddd ddddddd), 
+      bound: :word, 
+      symbols: { d: { pattern: '\d', atomic: true, left: '0', right: '0' } },   # <-- this
+      atomic: false
+    assert_equal '\b\d{4}(?:\d{3})?\b', rx
+
   end
 
 end
