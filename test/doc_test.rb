@@ -68,11 +68,12 @@ class DocTest < Minitest::Test
       ],
       normalize_whitespace: true,
       atomic: true,
+      bound:  true,
       symbols: {
-        year: year,
-        mday: mday,
-        wday: wday,
-        mo:   mo
+        year: { pattern: year, atomic: true, left: '1', right: '1' },
+        mday: { pattern: mday, atomic: true, left: '1', right: '1' },
+        wday: { pattern: wday, atomic: true, left: 'a', right: 'a' },
+        mo:   { pattern: mo,   atomic: true, left: 'a', right: 'a' }
       }
     )
 
