@@ -297,7 +297,7 @@ For example:
 ```ruby
 List::Matcher.pattern %w(dddd ddddddd), 
   bound: :word, 
-  symbols: { d: { pattern: '\d', atomic: true, left: '0', right: '0' } },
+  symbols: { d: { pattern: '\d', atomic: true, left: '0', right: '0' } },   # <-- this
   atomic: false
 
 # \b\d{4}(?:\d{3})?\b
