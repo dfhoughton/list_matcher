@@ -257,7 +257,7 @@ module List
         Hash[o.map{ |k, v| [ deep_dup(k), deep_dup(v) ] }]
       elsif o.is_a?(Array)
         o.map{ |v| deep_dup v }
-      elsif o.nil? || o.is_a?(Symbol)
+      elsif o.nil? || o.is_a?(Symbol) || o.is_a?(TrueClass) || o.is_a?(FalseClass)
         o
       else
         o.dup

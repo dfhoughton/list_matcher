@@ -271,6 +271,38 @@ List::Matcher.pattern [ 'Catch foo', 'foo', 'Fahrenheit foo' ], symbols: { foo: 
 Because it is possible for symbol sequences to overlap, sequences with string or symbol keys are evaluated before `Regexps`, and longer keys are
 evaluated before shorter ones.
 
+`List::Matcher` doesn't parse regex strings to determine whether they need to be grouped before any iteration suffix
+can be added or to determine whether it is sensible to add boundary sequences before or after them. By default it assumes
+that they need grouping if they repeat and that boundary markers don't make sense. You can override this behavior, however.
+You specify the characteristics of the pattern as a hash with the following keys:
+
+#### `:pattern`
+
+The value is the pattern to substitute for the symbol.
+
+#### `:atomic`
+
+The pattern needs no grouping if the value is true.
+
+#### `:left`
+
+A character to test for the left boundary condition.
+
+#### `:right`
+
+A character to test for the right boundary condition.
+
+For example:
+
+```ruby
+List::Matcher.pattern %w(dddd ddddddd), 
+  bound: :word, 
+  symbols: { d: { pattern: '\d', atomic: true, left: '0', right: '0' } },
+  atomic: false
+
+# \b\d{4}(?:\d{3})?\b
+```
+
 ### name
 
 If you assign your pattern a name, it will be constructed with a named group such that you can extract
