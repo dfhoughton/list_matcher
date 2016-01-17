@@ -2,7 +2,7 @@ require "list_matcher/version"
 
 module List
   class Matcher
-    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound, 
+    attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound,
       :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet, :not_extended
 
     # a special exception class for List::Matcher
@@ -599,16 +599,14 @@ module List
             dup_count.compact!
             if dup_count.any?
               copy = elements.dup
-              changed = false
               dup_count.reverse.each do |repeats, seq, start, finish|
                 a  = atomy? seq
                 sl = seq.length
                 if ( a ? 0 : engine.wrap_size ) + 2 + repeats.to_s.length + sl < sl * repeats
-                  changed = true
                   copy[start...finish] = ( a ? seq : wrap(seq) ) + "{#{repeats}}"
+                  return copy;
                 end
               end
-              return copy if changed
             end
           end
         end

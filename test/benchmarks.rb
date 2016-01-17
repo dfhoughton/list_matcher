@@ -1,5 +1,6 @@
 require 'list_matcher'
 require 'benchmark/ips'
+require 'set'
 
 size = 100
 magnitudes = 3
