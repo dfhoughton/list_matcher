@@ -137,6 +137,7 @@ module List
 
     # converst list into a string representing a regex pattern suitable for inclusion in a larger regex
     def pattern( list, opts={} )
+      return '(?!)' unless list.any?
       return bud(opts).pattern list unless opts.empty?
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:strip).select!{ |s| s.length > 0 } if strip

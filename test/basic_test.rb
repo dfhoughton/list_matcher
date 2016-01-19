@@ -309,4 +309,8 @@ class BasicTest < Minitest::Test
     rx = List::Matcher.pattern %w(a), bound: :word, atomic: false
     assert_equal '\ba\b', rx
   end
+
+  def test_empty_list
+    assert_equal '(?!)', List::Matcher.pattern([])
+  end
 end
