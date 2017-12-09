@@ -3,7 +3,8 @@ require "list_matcher/version"
 module List
   class Matcher
     attr_reader :atomic, :backtracking, :bound, :case_insensitive, :strip, :left_bound,
-      :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet, :not_extended
+      :right_bound, :word_test, :normalize_whitespace, :multiline, :name, :vet, :not_extended,
+      :encoding
 
     # a special exception class for List::Matcher
     class Error < ::StandardError; end
@@ -33,7 +34,8 @@ module List
           normalize_whitespace: false,
           symbols:              {},
           name:                 false,
-          vet:                  false
+          vet:                  false,
+          encoding:             Encoding::UTF_8
         )
       @atomic               = atomic
       @backtracking         = backtracking
@@ -46,6 +48,7 @@ module List
       @bound                = !!bound
       @normalize_whitespace = normalize_whitespace
       @vet                  = vet
+      @encoding             = encoding
       if name
         raise Error, "name must be a string or symbol" unless name.is_a?(String) || name.is_a?(Symbol)
         begin
@@ -354,7 +357,7 @@ module List
               s == 0 ? a.to_s <=> b.to_s : s
             end
           end.each do |var, opts|
-            c = ( max += 1 ).chr
+            c = ( max += 1 ).chr(engine.encoding)
             sp = if opts.is_a? Hash
               pat = opts.delete :pattern
               raise Error, "symbol #{var} requires a pattern" unless pat || var.is_a?(Regexp)
@@ -372,12 +375,12 @@ module List
         end
         if engine.bound
           if engine.left_bound
-            c = ( max += 1 ).chr
+            c = ( max += 1 ).chr(engine.encoding)
             @left = SymbolPattern.new engine, c, c, engine.left_bound
             @specials << @left
           end
           if engine.right_bound
-            c = ( max += 1 ).chr
+            c = ( max += 1 ).chr(engine.encoding)
             @right = SymbolPattern.new engine, c, c, engine.right_bound
             @specials << @right
           end
@@ -684,15 +687,15 @@ module List
         else
           rs = ranges(chars)
           if rs.size == 1 && rs[0][0] == rs[0][1]
-            cc_quote rs[0][0].chr
+            cc_quote rs[0][0].chr(engine.encoding)
           else
             mid = rs.map do |s, e|
               if s == e
-                cc_quote s.chr
+                cc_quote s.chr(engine.encoding)
               elsif e == s + 1
-                "#{ cc_quote s.chr }#{ cc_quote e.chr }"
+                "#{ cc_quote s.chr(engine.encoding) }#{ cc_quote e.chr(engine.encoding) }"
               else
-                "#{ cc_quote s.chr }-#{ cc_quote e.chr }"
+                "#{ cc_quote s.chr(engine.encoding) }-#{ cc_quote e.chr(engine.encoding) }"
               end
             end.join
           end

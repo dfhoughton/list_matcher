@@ -401,6 +401,18 @@ List::Matcher.pattern [ 'cat and dog', '# is sometimes called the pound symbol' 
 
 Note that `List::Matcher` will continue to quote other white space characters.
 
+### encoding
+
+```ruby
+default: Encoding::UTF_8
+```
+
+`List::Matcher` converts characters into integers during the construction of character classes and then
+must convert the integers back into characters. In order to do this with characters whose code point is
+above 255 we must give `chr` a character encoding. This is all that this is. Most likely you will never
+need to change this default, but if it causes you trouble this parameters is provided so you can fix
+it without having to fork the code.
+
 ## Benchmarks
 
 Efficiency isn't the principle purpose of List::Matcher, but in almost all cases List::Matcher

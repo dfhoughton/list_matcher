@@ -31,6 +31,14 @@ class BasicTest < Minitest::Test
     end
   end
 
+  def test_fat_chars
+    doublewides = (256...1000).map{ |i| i.chr(Encoding::UTF_8) }
+    rx = List::Matcher.rx doublewides
+    doublewides.each do |word|
+      assert rx === word, "can match #{word}"
+    end
+  end
+
   def test_word_chars_case_insensitive
     word = (1..255).map(&:chr).select{ |c| /\w/ === c }
     chars = word + ['+']
