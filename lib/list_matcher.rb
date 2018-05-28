@@ -625,7 +625,7 @@ module List
         s.size == 1 || %r/
           \A
           (?>
-            \\\w # one of the canned character class expressions 
+            \\\w # one of the canned character class expressions
             |    # OR
             \[   # an ad hoc character class expression
               (?>
