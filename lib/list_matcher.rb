@@ -200,10 +200,10 @@ module List
       @wrap_size ||= pfx.length + 1
     end
 
-    def tree(list, symbols)
+    def tree(list, specializer)
       if list.size == 1
         leaves = list[0].chars.map do |c|
-          symbols[c] || Leaf.new( self, c )
+          specializer[c] || Leaf.new( self, c )
         end
         if leaves.length == 1
           leaves.first
@@ -211,38 +211,38 @@ module List
           Sequence.new self, *leaves
         end
       elsif list.all?{ |w| w.length == 1 }
-        chars = list.select{ |w| !symbols[w] }
+        chars = list.select{ |w| !specializer[w] }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
         end
-        a = Alternate.new self, symbols, list unless list.empty?
+        a = Alternate.new self, specializer, list unless list.empty?
         a.children.unshift c if a && c
         a || c
       elsif c = best_prefix(list)   # found a fixed-width prefix pattern
         if optional = c[1].include?('')
           c[1].reject!{ |w| w == '' }
         end
-        c1 = tree c[0], symbols
-        c2 = tree c[1], symbols
+        c1 = tree c[0], specializer
+        c2 = tree c[1], specializer
         c2 = c2.optionalize optional
         Sequence.new self, c1, c2
       elsif c = best_suffix(list)   # found a fixed-width suffix pattern
         if optional = c[0].include?('')
           c[0].reject!{ |w| w == '' }   # TODO make this faster with index
         end
-        c1 = tree c[0], symbols
+        c1 = tree c[0], specializer
         c1 = c1.optionalize optional
-        c2 = tree c[1], symbols
+        c2 = tree c[1], specializer
         Sequence.new self, c1, c2
       else
         grouped = list.group_by{ |w| w[0] }
-        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !symbols[w[0]] }.map{ |v, _| v }
+        chars = grouped.select{ |_, w| w.size == 1 && w[0].size == 1 && !specializer[w[0]] }.map{ |v, _| v }
         if chars.size > 1
           list -= chars
           c = CharClass.new self, chars
         end
-        a = Alternate.new self, symbols, list
+        a = Alternate.new self, specializer, list
         a.children.unshift c if c
         a
       end
@@ -608,6 +608,7 @@ module List
               dup_count.reverse.each do |repeats, seq, start, finish|
                 a  = atomy? seq
                 sl = seq.length
+                # only condense if this makes things shorter
                 if ( a ? 0 : engine.wrap_size ) + 2 + repeats.to_s.length + sl < sl * repeats
                   copy[start...finish] = ( a ? seq : wrap(seq) ) + "{#{repeats}}"
                   return copy;
@@ -619,9 +620,23 @@ module List
         elements
       end
 
-      # infer atomic patterns
+      # infer atomic patterns -- things that can safely be repeated without wrapping
       def atomy?(s)
-        s.size == 1 || /\A(?>\\\w|\[(?>[^\[\]\\]|\\.)++\])\z/ === s
+        s.size == 1 || %r/
+          \A
+          (?>
+            \\\w # one of the canned character class expressions 
+            |    # OR
+            \[   # an ad hoc character class expression
+              (?>
+                [^\[\]\\]
+                |
+                \\.
+              )++
+            \]
+          )
+          \z
+        /x === s
       end
 
       # iterated repeat condensation
@@ -744,9 +759,9 @@ module List
 
     class Alternate < Node
 
-      def initialize(engine, symbols, list)
+      def initialize(engine, specializer, list)
         super(engine, nil)
-        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, symbols ) }
+        @children = list.group_by{ |s| s[0] }.values.map{ |ar| engine.tree( ar, specializer ) }
       end
 
       def convert
