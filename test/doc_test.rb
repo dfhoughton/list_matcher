@@ -16,8 +16,8 @@ class DocTest < Minitest::Test
     assert_equal '(?:[b-d]ad)', (m.pattern %w( cad bad dad ))
     assert_equal '(?:cat(?:alog)?)', (m.pattern %w( cat catalog ))
     assert_equal '(?:[4-9]|1\d?|2\d?|3[01]?)', (m.pattern (1..31).to_a)
-    assert_equal "(?:cat|dog)", (List::Matcher.pattern %w( cat dog ))
-    assert_equal /(?:cat|dog)/, (List::Matcher.rx      %w( cat dog ))
+    assert_equal "(?:cat|dog)",   (List::Matcher.pattern %w( cat dog ))
+    assert_equal %r/(?:cat|dog)/, (List::Matcher.rx      %w( cat dog ))
     m = List::Matcher.new normalize_whitespace: true, bound: true, case_insensitive: true, multiline: true, atomic: false, symbols: { num: '\d++' }
     m2 = m.bud case_insensitive: false
     assert !m2.case_insensitive

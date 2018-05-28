@@ -57,6 +57,8 @@ module List
         rescue
           raise Error, "#{name} does not work as the name of a named group"
         end
+      else
+        @name = nil
       end
       case bound
       when TrueClass
@@ -144,7 +146,7 @@ module List
       return bud(opts).pattern list unless opts.empty?
       list = list.compact.map(&:to_s).select{ |s| s.length > 0 }
       list.map!(&:strip).select!{ |s| s.length > 0 } if strip
-      list.map!{ |s| s.gsub /\s++/, ' ' } if normalize_whitespace
+      list.map!{ |s| s.gsub %r/\s++/, ' ' } if normalize_whitespace
       return nil if list.empty?
       specializer = Special.new self, @symbols, list
       list = specializer.normalize
